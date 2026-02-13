@@ -91,6 +91,7 @@ model Expense {
   vendorId    String?
   paidBy      String   // OFFICE, ALTAN, SUAT
   isPaid      Boolean  @default(true)
+  notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
