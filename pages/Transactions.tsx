@@ -112,25 +112,10 @@ const Transactions: React.FC = () => {
     const updatedTransaction = { ...transaction, paymentStatus: PaymentStatus.PAID };
     updateTransaction(updatedTransaction.id, updatedTransaction);
 
-    // 2. Gider Kaydı Oluştur (Otomatik)
-    const consultant = consultants?.find(c => c.id === transaction.consultantId);
-
-    if (consultant) {
-      const newExpense: Expense = {
-        id: `auto-exp-${Date.now()}`,
-        category: ExpenseCategory.COMMISSION, // Prim/Hakediş ödemesi
-        amount: transaction.consultantShare,
-        date: new Date().toISOString().split('T')[0],
-        description: `Hakediş Ödemesi: ${transaction.propertyName} - ${consultant.fullName}`,
-        paidBy: Payer.OFFICE, // Ödemeyi ofis yaptı varsayıyoruz
-        isPaid: true,
-        notes: `Ref İşlem ID: ${transaction.id}`
-      };
-      addExpense(newExpense);
-    }
+    // 2. Artık otomatik gider oluşturulmuyor (Danışman payı bir ofis gideri değildir)
 
     setIsPaymentModalOpen(false);
-    alert('Hakediş ödemesi başarıyla onaylandı ve Giderler tablosuna işlendi.');
+    alert('Hakediş ödemesi başarıyla onaylandı.');
   };
 
   const formatCurrency = (amount: number) => {
