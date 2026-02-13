@@ -11,7 +11,10 @@ async function main() {
 
     await prisma.user.upsert({
         where: { username: 'admin' },
-        update: {},
+        update: {
+            role: 'ADMIN',
+            name: 'Sistem Yöneticisi',
+        },
         create: {
             username: 'admin',
             password: adminPassword,
@@ -22,34 +25,43 @@ async function main() {
 
     await prisma.user.upsert({
         where: { username: 'altan' },
-        update: {},
+        update: {
+            role: 'ORTAK',
+            name: 'Altan Bey',
+        },
         create: {
             username: 'altan',
             password: altanPassword,
             name: 'Altan Bey',
-            role: 'ortak',
+            role: 'ORTAK',
         },
     });
 
     await prisma.user.upsert({
         where: { username: 'suat' },
-        update: {},
+        update: {
+            role: 'ORTAK',
+            name: 'Suat Bey',
+        },
         create: {
             username: 'suat',
             password: suatPassword,
             name: 'Suat Bey',
-            role: 'ortak',
+            role: 'ORTAK',
         },
     });
 
     await prisma.user.upsert({
         where: { username: 'nalan' },
-        update: {},
+        update: {
+            role: 'MUHASEBE',
+            name: 'Nalan Hanım',
+        },
         create: {
             username: 'nalan',
             password: nalanPassword,
             name: 'Nalan Hanım',
-            role: 'muhasebe',
+            role: 'MUHASEBE',
         },
     });
 
