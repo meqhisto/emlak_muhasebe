@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Expense, ExpenseCategory, Payer } from '../types';
+import { Expense, ExpenseCategory, Payer, User, SystemLog } from '../types';
 import { INITIAL_EXPENSES } from '../constants';
 import Modal from '../components/Modal';
-import { Plus, Search, Filter, Receipt, Calendar, CreditCard, Tag, UserCircle, Wallet, Building2, X, RefreshCw, FileText, PieChart, StickyNote } from 'lucide-react';
+import { Plus, Search, Filter, Receipt, Calendar, Tag, UserCircle, Building2, RefreshCw, FileText, PieChart, StickyNote, Trash2, Edit } from 'lucide-react';
 
-const Expenses: React.FC = () => {
+interface ExpensesProps {
+  currentUser: User;
+}
+
+const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   
   // UI States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,15 +54,60 @@ const Expenses: React.FC = () => {
     }
   }, [expenses]);
 
-  const handleOpenModal = () => {
-    setFormData({
-      description: '',
-      category: ExpenseCategory.OTHER,
-      amount: '',
-      date: new Date().toISOString().split('T')[0],
-      paidBy: Payer.OFFICE,
-      notes: '',
-    });
+  // LOGGING HELPER (Safe Version)
+  const logAction = (action: 'CREATE' | 'UPDATE' | 'DELETE', description: string) => {
+    try {
+        const newLog: SystemLog = {
+          id: Date.now().toString(),
+          date: new Date().toISOString(),
+          user: currentUser.name,
+          action: action,
+          module: 'EXPENSE',
+          description: description
+        };
+        
+        const storedLogs = localStorage.getItem('emlak_logs');
+        let existingLogs: SystemLog[] = [];
+        
+        if (storedLogs) {
+            try {
+                const parsed = JSON.parse(storedLogs);
+                if (Array.isArray(parsed)) {
+                    existingLogs = parsed;
+                }
+            } catch (e) {
+                console.error("Log parse error", e);
+            }
+        }
+        
+        localStorage.setItem('emlak_logs', JSON.stringify([newLog, ...existingLogs]));
+    } catch (error) {
+        console.error("Logging failed:", error);
+    }
+  };
+
+  const handleOpenModal = (expenseToEdit?: Expense) => {
+    if (expenseToEdit) {
+      setEditingId(expenseToEdit.id);
+      setFormData({
+        description: expenseToEdit.description,
+        category: expenseToEdit.category,
+        amount: expenseToEdit.amount.toString(),
+        date: expenseToEdit.date,
+        paidBy: expenseToEdit.paidBy,
+        notes: expenseToEdit.notes || '',
+      });
+    } else {
+      setEditingId(null);
+      setFormData({
+        description: '',
+        category: ExpenseCategory.OTHER,
+        amount: '',
+        date: new Date().toISOString().split('T')[0],
+        paidBy: Payer.OFFICE,
+        notes: '',
+      });
+    }
     setIsModalOpen(true);
   };
 
@@ -66,21 +116,52 @@ const Expenses: React.FC = () => {
     setIsViewModalOpen(true);
   };
 
+  const handleDelete = (id: string) => {
+    if (window.confirm('Bu gider kaydını silmek istediğinize emin misiniz? Bu işlem loglanacaktır.')) {
+      const exp = expenses.find(e => e.id === id);
+      if (exp) {
+        logAction('DELETE', `Gider Silindi: ${exp.description} (${exp.amount} TL) - Kategori: ${exp.category}`);
+      }
+      setExpenses(prev => prev.filter(e => e.id !== id));
+      setIsViewModalOpen(false);
+      setSelectedExpense(null);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const newExpense: Expense = {
-      id: Date.now().toString(),
-      description: formData.description,
-      category: formData.category,
-      amount: Number(formData.amount),
-      date: formData.date,
-      paidBy: formData.paidBy,
-      notes: formData.notes,
-    };
-
-    setExpenses(prev => [newExpense, ...prev]);
+    if (editingId) {
+      // Update existing
+      setExpenses(prev => prev.map(exp => 
+        exp.id === editingId ? {
+          ...exp,
+          description: formData.description,
+          category: formData.category,
+          amount: Number(formData.amount),
+          date: formData.date,
+          paidBy: formData.paidBy,
+          notes: formData.notes,
+        } : exp
+      ));
+      logAction('UPDATE', `Gider Düzenlendi: ${formData.description} (${formData.amount} TL)`);
+    } else {
+      // Create new
+      const newExpense: Expense = {
+        id: Date.now().toString(),
+        description: formData.description,
+        category: formData.category,
+        amount: Number(formData.amount),
+        date: formData.date,
+        paidBy: formData.paidBy,
+        notes: formData.notes,
+      };
+      setExpenses(prev => [newExpense, ...prev]);
+      logAction('CREATE', `Yeni Gider: ${formData.description} (${formData.amount} TL) - Ödeyen: ${formData.paidBy}`);
+    }
+    
     setIsModalOpen(false);
+    setEditingId(null);
   };
 
   const handleClearFilters = () => {
@@ -173,7 +254,7 @@ const Expenses: React.FC = () => {
           <p className="text-slate-500">Ofis harcamalarını ve ortak ödemelerini kaydedin.</p>
         </div>
         <button
-          onClick={handleOpenModal}
+          onClick={() => handleOpenModal()}
           className="flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
         >
           <Plus size={20} />
@@ -413,11 +494,11 @@ const Expenses: React.FC = () => {
         </div>
       </div>
 
-      {/* New Expense Modal */}
+      {/* New/Edit Expense Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Yeni Gider Kaydı"
+        title={editingId ? 'Gider Düzenle' : 'Yeni Gider Kaydı'}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           
@@ -552,7 +633,7 @@ const Expenses: React.FC = () => {
               type="submit"
               className="flex-1 px-4 py-2 text-white bg-rose-600 hover:bg-rose-700 font-medium rounded-lg transition-colors"
             >
-              Kaydet
+              {editingId ? 'Değişiklikleri Kaydet' : 'Kaydet'}
             </button>
           </div>
         </form>
@@ -630,12 +711,23 @@ const Expenses: React.FC = () => {
                 </div>
             )}
 
-            <div className="pt-4">
+            <div className="pt-4 flex gap-3">
                 <button
-                    onClick={() => setIsViewModalOpen(false)}
-                    className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors"
+                    onClick={() => handleDelete(selectedExpense.id)}
+                    className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
-                    Kapat
+                    <Trash2 size={18} />
+                    Sil
+                </button>
+                <button
+                    onClick={() => {
+                        setIsViewModalOpen(false);
+                        handleOpenModal(selectedExpense);
+                    }}
+                    className="flex-1 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                    <Edit size={18} />
+                    Düzenle
                 </button>
             </div>
           </div>

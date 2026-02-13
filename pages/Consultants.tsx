@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Consultant } from '../types';
+import { Consultant, User, SystemLog } from '../types';
 import { INITIAL_CONSULTANTS } from '../constants';
 import Modal from '../components/Modal';
 import { Plus, Search, Edit2, Phone, Calendar, Percent, UserCheck, UserX } from 'lucide-react';
 
-const Consultants: React.FC = () => {
+interface ConsultantsProps {
+  currentUser: User;
+}
+
+const Consultants: React.FC<ConsultantsProps> = ({ currentUser }) => {
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -37,6 +41,26 @@ const Consultants: React.FC = () => {
     }
   }, [consultants]);
 
+  // LOGGING HELPER
+  const logAction = (action: 'CREATE' | 'UPDATE' | 'DELETE', description: string) => {
+    try {
+      const newLog: SystemLog = {
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        user: currentUser.name,
+        action: action,
+        module: 'CONSULTANT',
+        description: description
+      };
+      const storedLogs = localStorage.getItem('emlak_logs');
+      let logs = storedLogs ? JSON.parse(storedLogs) : [];
+      if (!Array.isArray(logs)) logs = [];
+      localStorage.setItem('emlak_logs', JSON.stringify([newLog, ...logs]));
+    } catch (e) {
+      console.error("Logging failed", e);
+    }
+  };
+
   const handleOpenModal = (consultant?: Consultant) => {
     if (consultant) {
       setEditingId(consultant.id);
@@ -63,17 +87,17 @@ const Consultants: React.FC = () => {
     e.preventDefault();
     
     if (editingId) {
-      // Update existing
       setConsultants(prev => prev.map(c => 
         c.id === editingId ? { ...c, ...formData } as Consultant : c
       ));
+      logAction('UPDATE', `Danışman Bilgisi Güncellendi: ${formData.fullName}`);
     } else {
-      // Create new
       const newConsultant: Consultant = {
         id: Date.now().toString(),
         ...formData as Omit<Consultant, 'id'>
       };
       setConsultants(prev => [...prev, newConsultant]);
+      logAction('CREATE', `Yeni Danışman Eklendi: ${newConsultant.fullName} (Oran: %${newConsultant.commissionRate})`);
     }
     handleCloseModal();
   };

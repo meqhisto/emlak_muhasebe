@@ -187,16 +187,17 @@ const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
         {!isPaid && (
           <div className="bg-slate-50 border-t border-slate-100 p-4 flex justify-end print:hidden">
             <button
+              type="button"
               onClick={() => {
                 if(window.confirm('Bu ödemeyi onaylıyor musunuz? Durum "Ödendi" olarak güncellenecektir.')) {
                   onConfirmPayment(transaction.id);
-                  onClose();
+                  // Intentionally keeping modal open so user can see the "PAID" stamp and print if needed.
                 }
               }}
               className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-medium shadow-sm transition-colors flex items-center gap-2"
             >
               <CheckCircle size={18} />
-              Ödemeyi Onayla ve Kapat
+              Ödemeyi Onayla
             </button>
           </div>
         )}

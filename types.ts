@@ -1,3 +1,4 @@
+
 // --- KULLANICI & ROL ŞEMASI ---
 export enum UserRole {
   PARTNER = 'ORTAK', // Altan, Suat
@@ -95,4 +96,14 @@ export interface SalaryPayment {
   date: string;
   period: string; // "2023-10" (Yıl-Ay)
   isPaid: boolean;
+}
+
+// --- LOG SİSTEMİ (Güvenlik) ---
+export interface SystemLog {
+  id: string;
+  date: string; // ISO Timestamp
+  user: string; // User Name
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'RESET';
+  module: 'EXPENSE' | 'TRANSACTION' | 'SYSTEM' | 'PERSONNEL' | 'CONSULTANT';
+  description: string;
 }

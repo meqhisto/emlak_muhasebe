@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Transaction, TransactionType, Consultant, PaymentStatus } from '../types';
+import { Transaction, TransactionType, Consultant, PaymentStatus, User, SystemLog } from '../types';
 import { INITIAL_TRANSACTIONS, INITIAL_CONSULTANTS } from '../constants';
 import Modal from '../components/Modal';
 import PaymentFormModal from '../components/PaymentFormModal';
-import { Plus, Search, Filter, TrendingUp, Building, User, FileText, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, Search, Filter, TrendingUp, Building, User as UserIcon, FileText, CheckCircle2, Clock } from 'lucide-react';
 
-const Transactions: React.FC = () => {
+interface TransactionsProps {
+  currentUser: User;
+}
+
+const Transactions: React.FC<TransactionsProps> = ({ currentUser }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   
@@ -52,6 +56,39 @@ const Transactions: React.FC = () => {
     }
   }, [transactions]);
 
+  // LOGGING HELPER (Safe Version)
+  const logAction = (action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE', description: string) => {
+    try {
+      const newLog: SystemLog = {
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        user: currentUser.name,
+        action: action,
+        module: 'TRANSACTION',
+        description: description
+      };
+      
+      const storedLogs = localStorage.getItem('emlak_logs');
+      let existingLogs: SystemLog[] = [];
+      
+      if (storedLogs) {
+        try {
+          const parsed = JSON.parse(storedLogs);
+          if (Array.isArray(parsed)) {
+            existingLogs = parsed;
+          }
+        } catch (e) {
+          console.error("Log parse error", e);
+        }
+      }
+      
+      localStorage.setItem('emlak_logs', JSON.stringify([newLog, ...existingLogs]));
+    } catch (error) {
+      console.error("Logging failed:", error);
+      // Fail silently to not block the user action
+    }
+  };
+
   const handleOpenModal = () => {
     setFormData({
       propertyName: '',
@@ -70,10 +107,21 @@ const Transactions: React.FC = () => {
   };
 
   const handleConfirmPayment = (id: string) => {
-    const updatedTransactions = transactions.map(t => 
+    // 1. Update List State (Functional Update for safety)
+    setTransactions(prev => prev.map(t => 
       t.id === id ? { ...t, paymentStatus: PaymentStatus.PAID } : t
-    );
-    setTransactions(updatedTransactions);
+    ));
+
+    // 2. Update Selected Item State (Immediately reflect changes)
+    if (selectedTransaction && selectedTransaction.id === id) {
+        setSelectedTransaction(prev => prev ? { ...prev, paymentStatus: PaymentStatus.PAID } : null);
+    }
+
+    // 3. Log Action
+    const trans = transactions.find(t => t.id === id);
+    if(trans) {
+        logAction('APPROVE', `Hakediş Ödemesi Onaylandı: ${trans.propertyName} - Danışman Payı: ${trans.consultantShare} TL`);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -111,6 +159,7 @@ const Transactions: React.FC = () => {
     };
 
     setTransactions(prev => [newTransaction, ...prev]);
+    logAction('CREATE', `Yeni Gelir Girişi: ${formData.propertyName} (${formData.type}) - Toplam Ciro: ${revenue} TL`);
     setIsModalOpen(false);
   };
 
@@ -216,7 +265,7 @@ const Transactions: React.FC = () => {
                           {t.type === TransactionType.SALE ? 'Satış' : 'Kiralama'}
                         </span>
                         <span className="text-xs text-slate-500 flex items-center gap-1">
-                          <User size={12} /> {t.customerName}
+                          <UserIcon size={12} /> {t.customerName}
                         </span>
                       </div>
                     </div>
@@ -324,7 +373,7 @@ const Transactions: React.FC = () => {
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">Müşteri Adı</label>
             <div className="relative">
-                <User className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                <UserIcon className="absolute left-3 top-2.5 text-slate-400" size={18} />
                 <input
                 type="text"
                 required

@@ -42,23 +42,25 @@ const App: React.FC = () => {
   };
 
   const renderPage = () => {
+    if (!user) return <Login onLogin={handleLogin} />;
+
     switch (currentPage) {
       case '/':
-        return user ? <Dashboard user={user} /> : null;
+        return <Dashboard user={user} />;
       case '/consultants':
-        return <Consultants />;
+        return <Consultants currentUser={user} />;
       case '/personnel':
-        return <PersonnelPage />;
+        return <PersonnelPage currentUser={user} />;
       case '/transactions':
-        return <Transactions />;
+        return <Transactions currentUser={user} />;
       case '/expenses':
-        return <Expenses />;
+        return <Expenses currentUser={user} />;
       case '/reports':
         return <Reports />;
       case '/settings':
-        return <Settings />;
+        return <Settings currentUser={user} />;
       default:
-        return <Dashboard user={user!} />;
+        return <Dashboard user={user} />;
     }
   };
 

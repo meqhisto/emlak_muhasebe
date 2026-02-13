@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Personnel, SalaryPayment, Expense, ExpenseCategory, Payer } from '../types';
+import { Personnel, SalaryPayment, Expense, ExpenseCategory, Payer, User as UserType, SystemLog } from '../types';
 import { INITIAL_PERSONNEL, INITIAL_SALARY_PAYMENTS, INITIAL_EXPENSES } from '../constants';
 import Modal from '../components/Modal';
 import { Plus, Search, User, Briefcase, Calendar, DollarSign, Wallet, History, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-const PersonnelPage: React.FC = () => {
+interface PersonnelProps {
+  currentUser: UserType;
+}
+
+const PersonnelPage: React.FC<PersonnelProps> = ({ currentUser }) => {
   const [activeTab, setActiveTab] = useState<'EMPLOYEES' | 'PAYROLL'>('EMPLOYEES');
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [payments, setPayments] = useState<SalaryPayment[]>([]);
@@ -36,7 +40,6 @@ const PersonnelPage: React.FC = () => {
 
   // Load Data
   useEffect(() => {
-    // 1. Personnel
     const storedPersonnel = localStorage.getItem('emlak_personnel');
     if (storedPersonnel) {
       setPersonnel(JSON.parse(storedPersonnel));
@@ -45,7 +48,6 @@ const PersonnelPage: React.FC = () => {
       localStorage.setItem('emlak_personnel', JSON.stringify(INITIAL_PERSONNEL));
     }
 
-    // 2. Payments
     const storedPayments = localStorage.getItem('emlak_salary_payments');
     if (storedPayments) {
       setPayments(JSON.parse(storedPayments));
@@ -54,7 +56,6 @@ const PersonnelPage: React.FC = () => {
       localStorage.setItem('emlak_salary_payments', JSON.stringify(INITIAL_SALARY_PAYMENTS));
     }
 
-    // 3. Expenses (for syncing)
     const storedExpenses = localStorage.getItem('emlak_expenses');
     if (storedExpenses) {
       setExpenses(JSON.parse(storedExpenses));
@@ -76,12 +77,30 @@ const PersonnelPage: React.FC = () => {
     if (expenses.length > 0) localStorage.setItem('emlak_expenses', JSON.stringify(expenses));
   }, [expenses]);
 
+  // LOGGING HELPER
+  const logAction = (action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE', description: string) => {
+    try {
+      const newLog: SystemLog = {
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        user: currentUser.name,
+        action: action,
+        module: 'PERSONNEL',
+        description: description
+      };
+      const storedLogs = localStorage.getItem('emlak_logs');
+      let logs = storedLogs ? JSON.parse(storedLogs) : [];
+      if (!Array.isArray(logs)) logs = [];
+      localStorage.setItem('emlak_logs', JSON.stringify([newLog, ...logs]));
+    } catch (e) {
+      console.error("Logging failed", e);
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
   };
 
-  // --- EMPLOYEE HANDLERS ---
   const handleOpenEmployeeModal = (emp?: Personnel) => {
     if (emp) {
       setEditingEmployee(emp);
@@ -103,19 +122,19 @@ const PersonnelPage: React.FC = () => {
     e.preventDefault();
     if (editingEmployee) {
       setPersonnel(prev => prev.map(p => p.id === editingEmployee.id ? { ...p, ...employeeForm } as Personnel : p));
+      logAction('UPDATE', `Personel Bilgisi Güncellendi: ${employeeForm.fullName}`);
     } else {
       const newEmp: Personnel = {
         id: Date.now().toString(),
         ...employeeForm as Omit<Personnel, 'id'>
       };
       setPersonnel(prev => [...prev, newEmp]);
+      logAction('CREATE', `Yeni Personel Eklendi: ${newEmp.fullName} (${newEmp.role})`);
     }
     setIsEmployeeModalOpen(false);
   };
 
-  // --- PAYMENT HANDLERS ---
   const handleOpenPaymentModal = () => {
-    // Default to first active employee
     const firstEmp = personnel.find(p => p.isActive);
     setPaymentForm({
       personnelId: firstEmp ? firstEmp.id : '',
@@ -128,11 +147,9 @@ const PersonnelPage: React.FC = () => {
 
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     const selectedEmp = personnel.find(p => p.id === paymentForm.personnelId);
     if (!selectedEmp) return;
 
-    // 1. Create Salary Payment Record
     const newPayment: SalaryPayment = {
         id: `sp-${Date.now()}`,
         personnelId: paymentForm.personnelId,
@@ -141,26 +158,23 @@ const PersonnelPage: React.FC = () => {
         period: paymentForm.period,
         isPaid: true
     };
-    
     setPayments(prev => [newPayment, ...prev]);
 
-    // 2. Automatically Create Expense Record
     const newExpense: Expense = {
         id: `exp-${Date.now()}`,
         category: ExpenseCategory.PERSONNEL,
         amount: Number(paymentForm.amount),
         date: paymentForm.date,
         description: `${paymentForm.period} Maaş Ödemesi - ${selectedEmp.fullName}`,
-        paidBy: Payer.OFFICE // Maaşlar genelde ofisten çıkar
+        paidBy: Payer.OFFICE
     };
-
     setExpenses(prev => [newExpense, ...prev]);
 
+    logAction('APPROVE', `Maaş Ödemesi Yapıldı: ${selectedEmp.fullName} (${paymentForm.period} Dönemi)`);
     setIsPaymentModalOpen(false);
     alert('Maaş ödemesi kaydedildi ve giderlere işlendi.');
   };
 
-  // Helper to auto-fill amount when changing personnel
   const handlePaymentPersonnelChange = (id: string) => {
     const emp = personnel.find(p => p.id === id);
     setPaymentForm(prev => ({
@@ -196,7 +210,6 @@ const PersonnelPage: React.FC = () => {
         </div>
       </div>
 
-      {/* --- EMPLOYEES TAB --- */}
       {activeTab === 'EMPLOYEES' && (
         <div className="space-y-6 animate-in fade-in duration-300">
            <div className="flex justify-between items-center">
@@ -266,7 +279,6 @@ const PersonnelPage: React.FC = () => {
         </div>
       )}
 
-      {/* --- PAYROLL TAB --- */}
       {activeTab === 'PAYROLL' && (
         <div className="space-y-6 animate-in fade-in duration-300">
            <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-xl flex items-center justify-between">
@@ -339,7 +351,6 @@ const PersonnelPage: React.FC = () => {
         </div>
       )}
 
-      {/* --- ADD/EDIT EMPLOYEE MODAL --- */}
       <Modal
         isOpen={isEmployeeModalOpen}
         onClose={() => setIsEmployeeModalOpen(false)}
@@ -423,7 +434,6 @@ const PersonnelPage: React.FC = () => {
         </form>
       </Modal>
 
-      {/* --- PAYMENT MODAL --- */}
       <Modal
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
