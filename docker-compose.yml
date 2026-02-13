@@ -10,7 +10,7 @@ services:
       # Persist the sqlite database
       - ./backend/prisma:/app/prisma
     environment:
-      - DATABASE_URL=file:./dev.db
+      - DATABASE_URL=file:/app/prisma/dev.db
       - PORT=3001
       # Add other env vars here or use an env_file
     restart: always
