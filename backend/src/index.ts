@@ -18,6 +18,7 @@ import consultantRoutes from './routes/consultantRoutes';
 import personnelRoutes from './routes/personnelRoutes';
 import vendorRoutes from './routes/vendorRoutes';
 import systemLogRoutes from './routes/systemLogRoutes';
+import salaryPaymentRoutes from './routes/salaryPaymentRoutes';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
@@ -26,6 +27,7 @@ app.use('/api/consultants', consultantRoutes);
 app.use('/api/personnel', personnelRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/logs', systemLogRoutes);
+app.use('/api/salary-payments', salaryPaymentRoutes);
 
 // Basic health check route
 app.get('/api/health', (req, res) => {

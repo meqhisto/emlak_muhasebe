@@ -71,7 +71,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 api.get('/consultants'),
                 api.get('/vendors'),
                 api.get('/personnel'),
-                api.get('/logs')
+                api.get('/logs'),
+                api.get('/salary-payments')
             ]);
 
             // Her endpoint bağımsız — biri başarısız olsa bile diğerleri yüklenir
@@ -81,6 +82,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (results[3].status === 'fulfilled') setVendors(results[3].value.data);
             if (results[4].status === 'fulfilled') setPersonnel(results[4].value.data);
             if (results[5].status === 'fulfilled') setLogs(results[5].value.data);
+            if (results[6].status === 'fulfilled') setPayments(results[6].value.data);
 
             const failedCount = results.filter(r => r.status === 'rejected').length;
             if (failedCount > 0) {
@@ -192,8 +194,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // --- PAYMENTS ---
     const addPayment = async (payment: SalaryPayment) => {
-        // Backend API needed, for now just update local state
-        setPayments(prev => [...prev, payment]);
+        await api.post('/salary-payments', payment);
+        await fetchData();
     };
 
     const refreshLogs = async () => {

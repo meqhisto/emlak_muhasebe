@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Transaction, Expense, Consultant, UserRole, TransactionType, Payer } from '../types';
+import { Transaction, Expense, Consultant, UserRole, TransactionType, Payer, ExpenseCategory } from '../types';
 import { INITIAL_TRANSACTIONS, INITIAL_EXPENSES, INITIAL_CONSULTANTS, APP_NAME } from '../constants';
 import { BarChart3, TrendingUp, TrendingDown, AlertTriangle, Wallet, Calendar, Printer, FileText, Activity } from 'lucide-react';
 
@@ -62,9 +62,15 @@ const Reports: React.FC = () => {
     }, [transactions, expenses, selectedYear]);
 
     // --- CALCULATIONS ---
+    // Hakediş ödemelerini giderlerden çıkar
+    const isCommissionExpense = (e: Expense) =>
+        e.category === ExpenseCategory.COMMISSION ||
+        (e.category === ExpenseCategory.PERSONNEL && e.description.toLowerCase().includes('hakediş'));
+    const operationalExpenses = filteredExpenses.filter(e => !isCommissionExpense(e));
+
     const totalTurnover = filteredTransactions.reduce((acc, t) => acc + t.totalRevenue, 0);
     const totalOfficeRevenue = filteredTransactions.reduce((acc, t) => acc + t.officeRevenue, 0);
-    const totalExpenses = filteredExpenses.reduce((acc, e) => acc + e.amount, 0);
+    const totalExpenses = operationalExpenses.reduce((acc, e) => acc + e.amount, 0);
     const netProfit = totalOfficeRevenue - totalExpenses;
 
     const calculatePartnerStats = (payerType: Payer) => {
@@ -437,7 +443,7 @@ const Reports: React.FC = () => {
         </div>
     );
 
-    if (!currentUser || currentUser.role !== UserRole.PARTNER) {
+    if (!currentUser || (currentUser.role !== UserRole.PARTNER && currentUser.role !== UserRole.ADMIN)) {
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] text-center p-8">
                 <div className="p-4 bg-red-100 text-red-600 rounded-full mb-4">

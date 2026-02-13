@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as LucideIcons from 'lucide-react';
 import { APP_NAME, NAVIGATION_ITEMS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
+import { PaymentStatus, ExpenseCategory } from '../types';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,9 +12,20 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { currentUser, logout } = useAuth();
+  const { transactions, expenses } = useData();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Bildirim badge hesaplaması
+  const badges = useMemo(() => {
+    const unpaidExpenses = expenses?.filter(e => !e.isPaid && e.category !== ExpenseCategory.COMMISSION).length || 0;
+    const pendingHakedis = transactions?.filter(t => t.paymentStatus === PaymentStatus.PENDING).length || 0;
+    return {
+      '/expenses': unpaidExpenses,
+      '/transactions': pendingHakedis,
+    } as Record<string, number>;
+  }, [transactions, expenses]);
 
   if (!currentUser) {
     return <>{children}</>;
@@ -82,7 +95,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   `}
                 >
                   {getIcon(item.icon)}
-                  {item.label}
+                  <span className="flex-1">{item.label}</span>
+                  {badges[item.path] > 0 && (
+                    <span className="ml-auto min-w-[20px] h-5 flex items-center justify-center px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full">
+                      {badges[item.path]}
+                    </span>
+                  )}
                 </button>
               );
             })}
