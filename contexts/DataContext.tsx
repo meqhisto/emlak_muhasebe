@@ -65,14 +65,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [
-                transactionsRes,
-                expensesRes,
-                consultantsRes,
-                vendorsRes,
-                personnelRes,
-                logsRes
-            ] = await Promise.all([
+            const results = await Promise.allSettled([
                 api.get('/transactions'),
                 api.get('/expenses'),
                 api.get('/consultants'),
@@ -81,12 +74,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 api.get('/logs')
             ]);
 
-            setTransactions(transactionsRes.data);
-            setExpenses(expensesRes.data);
-            setConsultants(consultantsRes.data);
-            setVendors(vendorsRes.data);
-            setPersonnel(personnelRes.data);
-            setLogs(logsRes.data);
+            // Her endpoint bağımsız — biri başarısız olsa bile diğerleri yüklenir
+            if (results[0].status === 'fulfilled') setTransactions(results[0].value.data);
+            if (results[1].status === 'fulfilled') setExpenses(results[1].value.data);
+            if (results[2].status === 'fulfilled') setConsultants(results[2].value.data);
+            if (results[3].status === 'fulfilled') setVendors(results[3].value.data);
+            if (results[4].status === 'fulfilled') setPersonnel(results[4].value.data);
+            if (results[5].status === 'fulfilled') setLogs(results[5].value.data);
+
+            const failedCount = results.filter(r => r.status === 'rejected').length;
+            if (failedCount > 0) {
+                console.warn(`${failedCount} API çağrısı başarısız oldu.`);
+            }
             setError(null);
         } catch (err) {
             console.error('Veri çekme hatası:', err);
