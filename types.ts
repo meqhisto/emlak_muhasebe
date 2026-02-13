@@ -17,8 +17,8 @@ export interface Consultant {
   id: string;
   fullName: string;
   phoneNumber: string;
-  commissionRate: number; 
-  startDate: string; 
+  commissionRate: number;
+  startDate: string;
   isActive: boolean;
 }
 
@@ -116,5 +116,5 @@ export interface SystemLog {
   user: string;
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'RESET';
   module: 'EXPENSE' | 'TRANSACTION' | 'SYSTEM' | 'PERSONNEL' | 'CONSULTANT' | 'VENDOR';
-  description: string;
+  details: string;
 }

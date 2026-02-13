@@ -1,0 +1,117 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String @id @default(uuid())
+  username String @unique
+  password String
+  name     String
+  role     String // ADMIN, PARTNER, STAFF
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Consultant {
+  id             String @id @default(uuid())
+  fullName       String
+  phoneNumber    String
+  commissionRate Float
+  startDate      DateTime
+  isActive       Boolean @default(true)
+  transactions   Transaction[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Vendor {
+  id            String @id @default(uuid())
+  name          String
+  contactPerson String?
+  phone         String
+  email         String?
+  category      String // ExpenseCategory
+  taxNumber     String?
+  taxOffice     String?
+  isActive      Boolean @default(true)
+  expenses      Expense[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Personnel {
+  id            String @id @default(uuid())
+  fullName      String
+  role          String
+  monthlySalary Float
+  startDate     DateTime
+  isActive      Boolean @default(true)
+  payments      SalaryPayment[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Transaction {
+  id              String   @id @default(uuid())
+  date            DateTime
+  type            String   // SALE, RENT
+  customerName    String
+  customerPhone   String
+  propertyName    String
+  propertyType    String   // APARTMENT, VILLA, LAND, COMMERCIAL
+  totalRevenue    Float    // Toplam Hizmet Bedeli
+  consultant      Consultant @relation(fields: [consultantId], references: [id])
+  consultantId    String
+  consultantShare Float
+  officeRevenue   Float
+  partnerShareAltan Float
+  partnerShareSuat  Float
+  paymentStatus     String // PAID, PENDING
+  description       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  date        DateTime
+  category    String   // ExpenseCategory
+  amount      Float
+  description String
+  vendor      Vendor?  @relation(fields: [vendorId], references: [id])
+  vendorId    String?
+  paidBy      String   // OFFICE, ALTAN, SUAT
+  isPaid      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SalaryPayment {
+  id          String    @id @default(uuid())
+  personnel   Personnel @relation(fields: [personnelId], references: [id])
+  personnelId String
+  amount      Float
+  date        DateTime
+  period      String    // YYYY-MM
+  isPaid      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model SystemLog {
+  id        String   @id @default(uuid())
+  date      DateTime @default(now())
+  user      String   // Username
+  action    String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT
+  module    String   // TRANSACTION, EXPENSE, CONSULTANT, etc.
+  details   String
+  ipAddress String?
+}

@@ -198,7 +198,7 @@ const Settings: React.FC = () => {
                       <td className="px-6 py-3 text-slate-500 text-xs font-mono">{new Date(log.date).toLocaleString('tr-TR')}</td>
                       <td className="px-6 py-3 font-medium text-slate-900">{log.user}</td>
                       <td className="px-6 py-3">{getActionBadge(log.action)}</td>
-                      <td className="px-6 py-3 text-slate-600">{log.description}</td>
+                      <td className="px-6 py-3 text-slate-600">{log.details}</td>
                     </tr>
                   ))
                 ) : (

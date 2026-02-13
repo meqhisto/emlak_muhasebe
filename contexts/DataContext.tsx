@@ -1,199 +1,222 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import {
-    Transaction, Expense, Consultant, Vendor, Personnel, SalaryPayment, SystemLog
+    Transaction,
+    Expense,
+    Consultant,
+    Vendor,
+    Personnel,
+    SalaryPayment,
+    SystemLog
 } from '../types';
-import {
-    INITIAL_TRANSACTIONS, INITIAL_EXPENSES, INITIAL_CONSULTANTS, INITIAL_VENDORS, INITIAL_PERSONNEL, INITIAL_SALARY_PAYMENTS
-} from '../constants';
-import { useSystemLog } from '../hooks/useSystemLog';
-import { useAuth } from './AuthContext';
+import api from '../services/api';
 
 interface DataContextType {
-    transactions: Transaction[] | null;
-    expenses: Expense[] | null;
-    consultants: Consultant[] | null;
-    vendors: Vendor[] | null;
-    personnel: Personnel[] | null;
-    payments: SalaryPayment[] | null;
+    transactions: Transaction[];
+    expenses: Expense[];
+    consultants: Consultant[];
+    vendors: Vendor[];
+    personnel: Personnel[];
+    payments: SalaryPayment[];
     logs: SystemLog[];
+    loading: boolean;
+    error: string | null;
 
     // Actions
-    addTransaction: (transaction: Transaction) => void;
-    updateTransaction: (transaction: Transaction) => void;
-    deleteTransaction: (id: string) => void;
-    addExpense: (expense: Expense) => void;
-    updateExpense: (expense: Expense) => void;
-    deleteExpense: (id: string) => void;
-    addConsultant: (consultant: Consultant) => void;
-    updateConsultant: (consultant: Consultant) => void;
-    addVendor: (vendor: Vendor) => void;
-    updateVendor: (vendor: Vendor) => void;
-    addPersonnel: (personnel: Personnel) => void;
-    updatePersonnel: (personnel: Personnel) => void;
-    addPayment: (payment: SalaryPayment) => void;
-    refreshLogs: () => void;
+    addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
+    updateTransaction: (id: string, transaction: Partial<Transaction>) => Promise<void>;
+    deleteTransaction: (id: string) => Promise<void>;
+
+    addExpense: (expense: Omit<Expense, 'id'>) => Promise<void>;
+    updateExpense: (id: string, expense: Partial<Expense>) => Promise<void>;
+    deleteExpense: (id: string) => Promise<void>;
+
+    addConsultant: (consultant: Omit<Consultant, 'id'>) => Promise<void>;
+    updateConsultant: (id: string, consultant: Partial<Consultant>) => Promise<void>;
+    deleteConsultant: (id: string) => Promise<void>;
+
+    addVendor: (vendor: Omit<Vendor, 'id'>) => Promise<void>;
+    updateVendor: (id: string, vendor: Partial<Vendor>) => Promise<void>;
+    deleteVendor: (id: string) => Promise<void>;
+
+    addPersonnel: (person: Omit<Personnel, 'id'>) => Promise<void>;
+    updatePersonnel: (id: string, person: Partial<Personnel>) => Promise<void>;
+    deletePersonnel: (id: string) => Promise<void>;
+
+    addPayment: (payment: SalaryPayment) => Promise<void>;
+
+    refreshData: () => Promise<void>;
+    refreshLogs: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { currentUser } = useAuth();
-    const { logAction } = useSystemLog(currentUser);
-
-    // State Definitions
-    const [transactions, setTransactions] = useState<Transaction[] | null>(null);
-    const [expenses, setExpenses] = useState<Expense[] | null>(null);
-    const [consultants, setConsultants] = useState<Consultant[] | null>(null);
-    const [vendors, setVendors] = useState<Vendor[] | null>(null);
-    const [personnel, setPersonnel] = useState<Personnel[] | null>(null);
-    const [payments, setPayments] = useState<SalaryPayment[] | null>(null);
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [consultants, setConsultants] = useState<Consultant[]>([]);
+    const [vendors, setVendors] = useState<Vendor[]>([]);
+    const [personnel, setPersonnel] = useState<Personnel[]>([]);
+    const [payments, setPayments] = useState<SalaryPayment[]>([]); // Backend API needed for this
     const [logs, setLogs] = useState<SystemLog[]>([]);
 
-    // Load Data on Mount
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const [
+                transactionsRes,
+                expensesRes,
+                consultantsRes,
+                vendorsRes,
+                personnelRes,
+                logsRes
+            ] = await Promise.all([
+                api.get('/transactions'),
+                api.get('/expenses'),
+                api.get('/consultants'),
+                api.get('/vendors'),
+                api.get('/personnel'),
+                api.get('/logs')
+            ]);
+
+            setTransactions(transactionsRes.data);
+            setExpenses(expensesRes.data);
+            setConsultants(consultantsRes.data);
+            setVendors(vendorsRes.data);
+            setPersonnel(personnelRes.data);
+            setLogs(logsRes.data);
+            setError(null);
+        } catch (err) {
+            console.error('Veri çekme hatası:', err);
+            setError('Veriler yüklenirken bir hata oluştu.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const loadData = () => {
-            const storedTransactions = localStorage.getItem('emlak_transactions');
-            setTransactions(storedTransactions ? JSON.parse(storedTransactions) : INITIAL_TRANSACTIONS);
-
-            const storedExpenses = localStorage.getItem('emlak_expenses');
-            setExpenses(storedExpenses ? JSON.parse(storedExpenses) : INITIAL_EXPENSES);
-
-            const storedConsultants = localStorage.getItem('emlak_consultants');
-            setConsultants(storedConsultants ? JSON.parse(storedConsultants) : INITIAL_CONSULTANTS);
-
-            const storedVendors = localStorage.getItem('emlak_vendors');
-            setVendors(storedVendors ? JSON.parse(storedVendors) : INITIAL_VENDORS);
-
-            const storedPersonnel = localStorage.getItem('emlak_personnel');
-            setPersonnel(storedPersonnel ? JSON.parse(storedPersonnel) : INITIAL_PERSONNEL);
-
-            const storedPayments = localStorage.getItem('emlak_salary_payments');
-            setPayments(storedPayments ? JSON.parse(storedPayments) : INITIAL_SALARY_PAYMENTS);
-
-            refreshLogs();
-        };
-
-        loadData();
+        const token = localStorage.getItem('token');
+        if (token) {
+            fetchData();
+        } else {
+            setLoading(false);
+        }
     }, []);
 
-    // Persistence Effects
-    useEffect(() => {
-        if (transactions !== null) localStorage.setItem('emlak_transactions', JSON.stringify(transactions));
-    }, [transactions]);
-
-    useEffect(() => {
-        if (expenses !== null) localStorage.setItem('emlak_expenses', JSON.stringify(expenses));
-    }, [expenses]);
-
-    useEffect(() => {
-        if (consultants !== null) localStorage.setItem('emlak_consultants', JSON.stringify(consultants));
-    }, [consultants]);
-
-    useEffect(() => {
-        if (vendors !== null) localStorage.setItem('emlak_vendors', JSON.stringify(vendors));
-    }, [vendors]);
-
-    useEffect(() => {
-        if (personnel !== null) localStorage.setItem('emlak_personnel', JSON.stringify(personnel));
-    }, [personnel]);
-
-    useEffect(() => {
-        if (payments !== null) localStorage.setItem('emlak_salary_payments', JSON.stringify(payments));
-    }, [payments]);
-
-    // Actions
-    const refreshLogs = useCallback(() => {
-        const storedLogs = localStorage.getItem('emlak_logs');
-        setLogs(storedLogs ? JSON.parse(storedLogs) : []);
-    }, []);
-
-    const addTransaction = (transaction: Transaction) => {
-        setTransactions(prev => [transaction, ...(prev || [])]);
-        logAction('CREATE', `Yeni İşlem: ${transaction.propertyName}`, 'TRANSACTION');
-        refreshLogs();
+    // --- TRANSACTIONS ---
+    const addTransaction = async (data: Omit<Transaction, 'id'>) => {
+        await api.post('/transactions', data);
+        await fetchData();
     };
 
-    const updateTransaction = (transaction: Transaction) => {
-        setTransactions(prev => (prev || []).map(t => t.id === transaction.id ? transaction : t));
-        logAction('UPDATE', `İşlem Güncellendi: ${transaction.propertyName}`, 'TRANSACTION');
-        refreshLogs();
+    const updateTransaction = async (id: string, data: Partial<Transaction>) => {
+        await api.put(`/transactions/${id}`, data);
+        await fetchData();
     };
 
-    const deleteTransaction = (id: string) => {
-        setTransactions(prev => (prev || []).filter(t => t.id !== id));
-        logAction('DELETE', `İşlem Silindi: ID ${id}`, 'TRANSACTION');
-        refreshLogs();
+    const deleteTransaction = async (id: string) => {
+        await api.delete(`/transactions/${id}`);
+        await fetchData();
     };
 
-    const addExpense = (expense: Expense) => {
-        setExpenses(prev => [expense, ...(prev || [])]);
-        logAction('CREATE', `Yeni Gider: ${expense.description}`, 'EXPENSE');
-        refreshLogs();
+    // --- EXPENSES ---
+    const addExpense = async (data: Omit<Expense, 'id'>) => {
+        await api.post('/expenses', data);
+        await fetchData();
     };
 
-    const updateExpense = (expense: Expense) => {
-        setExpenses(prev => (prev || []).map(e => e.id === expense.id ? expense : e));
-        logAction('UPDATE', `Gider Güncellendi: ${expense.description}`, 'EXPENSE');
-        refreshLogs();
+    const updateExpense = async (id: string, data: Partial<Expense>) => {
+        await api.put(`/expenses/${id}`, data);
+        await fetchData();
     };
 
-    const deleteExpense = (id: string) => {
-        setExpenses(prev => (prev || []).filter(e => e.id !== id));
-        logAction('DELETE', `Gider Silindi: ID ${id}`, 'EXPENSE');
-        refreshLogs();
+    const deleteExpense = async (id: string) => {
+        await api.delete(`/expenses/${id}`);
+        await fetchData();
     };
 
-    const addConsultant = (consultant: Consultant) => {
-        setConsultants(prev => [...(prev || []), consultant]);
-        logAction('CREATE', `Yeni Danışman: ${consultant.fullName}`, 'CONSULTANT');
-        refreshLogs();
+    // --- CONSULTANTS ---
+    const addConsultant = async (data: Omit<Consultant, 'id'>) => {
+        console.log("Sending consultant data:", data); // Debug log
+        try {
+            await api.post('/consultants', data);
+            await fetchData();
+        } catch (error) {
+            console.error("Failed to add consultant:", error);
+            throw error;
+        }
     };
 
-    const updateConsultant = (consultant: Consultant) => {
-        setConsultants(prev => (prev || []).map(c => c.id === consultant.id ? consultant : c));
-        logAction('UPDATE', `Danışman Güncellendi: ${consultant.fullName}`, 'CONSULTANT');
-        refreshLogs();
+    const updateConsultant = async (id: string, data: Partial<Consultant>) => {
+        await api.put(`/consultants/${id}`, data);
+        await fetchData();
     };
 
-    const addVendor = (vendor: Vendor) => {
-        setVendors(prev => [...(prev || []), vendor]);
-        logAction('CREATE', `Yeni Firma: ${vendor.name}`, 'VENDOR');
-        refreshLogs();
+    const deleteConsultant = async (id: string) => {
+        await api.delete(`/consultants/${id}`);
+        await fetchData();
     };
 
-    const updateVendor = (vendor: Vendor) => {
-        setVendors(prev => (prev || []).map(v => v.id === vendor.id ? vendor : v));
-        logAction('UPDATE', `Firma Güncellendi: ${vendor.name}`, 'VENDOR');
-        refreshLogs();
+    // --- VENDORS ---
+    const addVendor = async (data: Omit<Vendor, 'id'>) => {
+        await api.post('/vendors', data);
+        await fetchData();
     };
 
-    const addPersonnel = (newPersonnel: Personnel) => {
-        setPersonnel(prev => [...(prev || []), newPersonnel]);
-        logAction('CREATE', `Yeni Personel: ${newPersonnel.fullName}`, 'PERSONNEL');
-        refreshLogs();
+    const updateVendor = async (id: string, data: Partial<Vendor>) => {
+        await api.put(`/vendors/${id}`, data);
+        await fetchData();
     };
 
-    const updatePersonnel = (updatedPersonnel: Personnel) => {
-        setPersonnel(prev => (prev || []).map(p => p.id === updatedPersonnel.id ? updatedPersonnel : p));
-        logAction('UPDATE', `Personel Güncellendi: ${updatedPersonnel.fullName}`, 'PERSONNEL');
-        refreshLogs();
+    const deleteVendor = async (id: string) => {
+        await api.delete(`/vendors/${id}`);
+        await fetchData();
     };
 
-    const addPayment = (payment: SalaryPayment) => {
-        setPayments(prev => [payment, ...(prev || [])]);
-        // Logging is handled by the component or we can add it here if we pass description
-        refreshLogs();
+    // --- PERSONNEL ---
+    const addPersonnel = async (data: Omit<Personnel, 'id'>) => {
+        await api.post('/personnel', data);
+        await fetchData();
+    };
+
+    const updatePersonnel = async (id: string, data: Partial<Personnel>) => {
+        await api.put(`/personnel/${id}`, data);
+        await fetchData();
+    };
+
+    const deletePersonnel = async (id: string) => {
+        await api.delete(`/personnel/${id}`);
+        await fetchData();
+    };
+
+    // --- PAYMENTS ---
+    const addPayment = async (payment: SalaryPayment) => {
+        // Backend API needed, for now just update local state
+        setPayments(prev => [...prev, payment]);
+    };
+
+    const refreshLogs = async () => {
+        try {
+            const res = await api.get('/logs');
+            setLogs(res.data);
+        } catch (error) {
+            console.error("Logs refresh failed", error);
+        }
     };
 
     return (
         <DataContext.Provider value={{
             transactions, expenses, consultants, vendors, personnel, payments, logs,
-            addTransaction, deleteTransaction,
+            loading, error,
+            addTransaction, updateTransaction, deleteTransaction,
             addExpense, updateExpense, deleteExpense,
-            addConsultant, updateConsultant,
-            addVendor, updateVendor,
-            addPersonnel, updatePersonnel,
+            addConsultant, updateConsultant, deleteConsultant,
+            addVendor, updateVendor, deleteVendor,
+            addPersonnel, updatePersonnel, deletePersonnel,
             addPayment,
+            refreshData: fetchData,
             refreshLogs
         }}>
             {children}

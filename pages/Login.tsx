@@ -11,45 +11,24 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Uygulama ilk çalıştığında yetkili kullanıcıları tanımla
-  useEffect(() => {
-    const predefinedUsers = [
-      { id: 'u1', username: 'altan', password: 'altan2025', name: 'Altan Bey', role: UserRole.PARTNER },
-      { id: 'u2', username: 'suat', password: 'suat2025', name: 'Suat Bey', role: UserRole.PARTNER },
-      { id: 'u3', username: 'nalan', password: 'nalan2025', name: 'Nalan Hanım', role: UserRole.ACCOUNTANT }
-    ];
 
-    // Sadece henüz kullanıcılar tanımlanmamışsa localStorage'a ekle
-    const stored = localStorage.getItem('emlak_auth_users');
-    if (!stored || JSON.parse(stored).length === 0) {
-      localStorage.setItem('emlak_auth_users', JSON.stringify(predefinedUsers));
-    }
-  }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Ağ gecikmesi simülasyonu
-    setTimeout(() => {
-      const storedUsersRaw = localStorage.getItem('emlak_auth_users');
-      const users: any[] = storedUsersRaw ? JSON.parse(storedUsersRaw) : [];
-
-      const user = users.find(u =>
-        u.username === username.toLowerCase().trim() &&
-        u.password === password
-      );
-
-      if (user) {
-        // Şifreyi session verisinden çıkararak login yap
-        const { password: _, ...userSession } = user;
-        login(userSession as User);
-      } else {
+    try {
+      await login({ username, password });
+    } catch (err: any) {
+      if (err.response?.status === 400) { // Bad Request usually means invalid credentials
         setError('Kullanıcı adı veya şifre hatalı.');
-        setIsLoading(false);
+      } else {
+        setError('Giriş yapılırken bir hata oluştu. Sunucuya erişilemiyor olabilir.');
       }
-    }, 600);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

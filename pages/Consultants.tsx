@@ -43,7 +43,7 @@ const Consultants: React.FC = () => {
     e.preventDefault();
     if (editingId) {
       const updatedConsultant = { ...consultants?.find(c => c.id === editingId)!, ...formData } as Consultant;
-      updateConsultant(updatedConsultant);
+      updateConsultant(updatedConsultant.id, updatedConsultant);
     } else {
       const newConsultant: Consultant = { id: Date.now().toString(), ...formData as Omit<Consultant, 'id'> };
       addConsultant(newConsultant);

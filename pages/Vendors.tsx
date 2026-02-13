@@ -55,7 +55,7 @@ const Vendors: React.FC = () => {
     e.preventDefault();
     if (editingId) {
       const updatedVendor = { ...vendors?.find(v => v.id === editingId)!, ...formData } as Vendor;
-      updateVendor(updatedVendor);
+      updateVendor(updatedVendor.id, updatedVendor);
     } else {
       const newVendor: Vendor = { id: Date.now().toString(), ...formData as Omit<Vendor, 'id'> };
       addVendor(newVendor);

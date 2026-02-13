@@ -1,24 +1,20 @@
 import { useCallback } from 'react';
 import { SystemLog, User } from '../types';
+import api from '../services/api';
 
 export const useSystemLog = (currentUser: User | null) => {
-    const logAction = useCallback((action: SystemLog['action'], description: string, moduleOverride?: SystemLog['module']) => {
+    const logAction = useCallback(async (action: SystemLog['action'], details: string, moduleOverride?: SystemLog['module']) => {
         if (!currentUser) return;
 
         try {
-            const newLog: SystemLog = {
-                id: Date.now().toString(),
-                date: new Date().toISOString(),
-                user: currentUser.name,
+            const logData = {
+                user: currentUser.username, // Send username string as expected by backend
                 action: action,
                 module: moduleOverride || 'SYSTEM',
-                description: description
+                details: details
             };
 
-            const storedLogs = localStorage.getItem('emlak_logs');
-            let logs = storedLogs ? JSON.parse(storedLogs) : [];
-            if (!Array.isArray(logs)) logs = [];
-            localStorage.setItem('emlak_logs', JSON.stringify([newLog, ...logs]));
+            await api.post('/logs', logData);
         } catch (e) {
             console.error("Logging failed", e);
         }

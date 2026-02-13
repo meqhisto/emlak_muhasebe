@@ -68,7 +68,7 @@ const PersonnelPage: React.FC = () => {
     e.preventDefault();
     if (editingEmployee) {
       const updatedPersonnel = { ...personnel?.find(p => p.id === editingEmployee.id)!, ...employeeForm } as Personnel;
-      updatePersonnel(updatedPersonnel);
+      updatePersonnel(updatedPersonnel.id, updatedPersonnel);
     } else {
       const newEmp: Personnel = {
         id: Date.now().toString(),

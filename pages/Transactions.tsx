@@ -102,7 +102,7 @@ const Transactions: React.FC = () => {
     if (!transaction) return;
 
     const updatedTransaction = { ...transaction, paymentStatus: PaymentStatus.PAID };
-    updateTransaction(updatedTransaction);
+    updateTransaction(updatedTransaction.id, updatedTransaction);
 
     // 2. Gider Kaydı Oluştur (Otomatik)
     const consultant = consultants?.find(c => c.id === transaction.consultantId);

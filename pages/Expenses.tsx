@@ -109,7 +109,7 @@ const Expenses: React.FC = () => {
         isPaid: formData.isPaid,
         vendorId: formData.vendorId || undefined,
       };
-      updateExpense(updatedExpense);
+      updateExpense(updatedExpense.id, updatedExpense);
     } else {
       const newExpense: Expense = {
         id: Date.now().toString(),
