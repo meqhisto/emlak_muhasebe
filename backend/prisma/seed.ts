@@ -27,7 +27,7 @@ async function main() {
             username: 'altan',
             password: altanPassword,
             name: 'Altan Bey',
-            role: 'ADMIN',
+            role: 'ortak',
         },
     });
 
@@ -38,7 +38,7 @@ async function main() {
             username: 'suat',
             password: suatPassword,
             name: 'Suat Bey',
-            role: 'ADMIN',
+            role: 'ortak',
         },
     });
 
@@ -49,7 +49,7 @@ async function main() {
             username: 'nalan',
             password: nalanPassword,
             name: 'Nalan Hanım',
-            role: 'STAFF',
+            role: 'muhasebe',
         },
     });
 
