@@ -34,4 +34,4 @@ COPY --from=builder /app/prisma ./prisma
 EXPOSE 3001
 
 # Start command
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/src/index.js"]
