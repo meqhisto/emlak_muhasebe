@@ -21,12 +21,12 @@ export const APP_NAME = "Emlak Ofisi YS";
 export const CURRENCY_SYMBOL = "₺";
 
 export const NAVIGATION_ITEMS = [
-  { label: "Ana Sayfa", path: "/", icon: "LayoutDashboard", roles: [UserRole.PARTNER, UserRole.ACCOUNTANT] },
-  { label: "Danışmanlar", path: "/consultants", icon: "Users", roles: [UserRole.PARTNER, UserRole.ACCOUNTANT] },
-  { label: "Firmalar / Cariler", path: "/vendors", icon: "Building", roles: [UserRole.PARTNER, UserRole.ACCOUNTANT] },
-  { label: "Personel & Maaş", path: "/personnel", icon: "Briefcase", roles: [UserRole.PARTNER, UserRole.ACCOUNTANT] },
-  { label: "Gelir / İşlemler", path: "/transactions", icon: "Banknote", roles: [UserRole.PARTNER, UserRole.ACCOUNTANT] },
-  { label: "Giderler", path: "/expenses", icon: "Receipt", roles: [UserRole.PARTNER, UserRole.ACCOUNTANT] },
-  { label: "Raporlar", path: "/reports", icon: "BarChart3", roles: [UserRole.PARTNER] },
-  { label: "Ayarlar", path: "/settings", icon: "Settings", roles: [UserRole.PARTNER] }
+  { label: "Ana Sayfa", path: "/", icon: "LayoutDashboard", roles: [UserRole.ADMIN, UserRole.PARTNER, UserRole.ACCOUNTANT] },
+  { label: "Danışmanlar", path: "/consultants", icon: "Users", roles: [UserRole.ADMIN, UserRole.PARTNER, UserRole.ACCOUNTANT] },
+  { label: "Firmalar / Cariler", path: "/vendors", icon: "Building", roles: [UserRole.ADMIN, UserRole.PARTNER, UserRole.ACCOUNTANT] },
+  { label: "Personel & Maaş", path: "/personnel", icon: "Briefcase", roles: [UserRole.ADMIN, UserRole.PARTNER, UserRole.ACCOUNTANT] },
+  { label: "Gelir / İşlemler", path: "/transactions", icon: "Banknote", roles: [UserRole.ADMIN, UserRole.PARTNER, UserRole.ACCOUNTANT] },
+  { label: "Giderler", path: "/expenses", icon: "Receipt", roles: [UserRole.ADMIN, UserRole.PARTNER, UserRole.ACCOUNTANT] },
+  { label: "Raporlar", path: "/reports", icon: "BarChart3", roles: [UserRole.ADMIN, UserRole.PARTNER] },
+  { label: "Ayarlar", path: "/settings", icon: "Settings", roles: [UserRole.ADMIN, UserRole.PARTNER] }
 ];

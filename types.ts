@@ -1,6 +1,7 @@
 
 // --- KULLANICI & ROL ŞEMASI ---
 export enum UserRole {
+  ADMIN = 'ADMIN',
   PARTNER = 'ORTAK', // Altan, Suat
   ACCOUNTANT = 'MUHASEBE', // Nalan
 }
