@@ -9,7 +9,7 @@ import { useData } from '../contexts/DataContext';
 
 const Settings: React.FC = () => {
   const { currentUser, logout } = useAuth();
-  const { logs, refreshLogs } = useData();
+  const { logs, refreshLogs, transactions, expenses, consultants, personnel } = useData();
   const [activeTab, setActiveTab] = useState<'GENERAL' | 'SECURITY'>('GENERAL');
 
   useEffect(() => {
@@ -39,14 +39,13 @@ const Settings: React.FC = () => {
 
   const handleExportData = () => {
     const data = {
-      consultants: JSON.parse(localStorage.getItem('emlak_consultants') || '[]'),
-      transactions: JSON.parse(localStorage.getItem('emlak_transactions') || '[]'),
-      expenses: JSON.parse(localStorage.getItem('emlak_expenses') || '[]'),
-      personnel: JSON.parse(localStorage.getItem('emlak_personnel') || '[]'),
-      salaryPayments: JSON.parse(localStorage.getItem('emlak_salary_payments') || '[]'),
-      logs: JSON.parse(localStorage.getItem('emlak_logs') || '[]'),
+      consultants: typeof consultants !== 'undefined' ? consultants : [],
+      transactions: typeof transactions !== 'undefined' ? transactions : [],
+      expenses: typeof expenses !== 'undefined' ? expenses : [],
+      personnel: typeof personnel !== 'undefined' ? personnel : [],
+      // salaryPayments and logs are also available from context if needed
       exportDate: new Date().toISOString(),
-      version: '1.0.0'
+      version: '1.0.1'
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -139,8 +138,11 @@ const Settings: React.FC = () => {
                     className="px-4 py-2 bg-red-50 border border-red-100 text-red-700 font-medium rounded-lg hover:bg-red-100 transition-colors text-sm flex items-center gap-2 shadow-sm"
                   >
                     <RefreshCw size={16} />
-                    Fabrika Ayarlarına Dön
+                    Oturumu Sıfırla
                   </button>
+                  <p className="mt-2 text-[10px] text-red-400 italic">
+                    Not: Sunucudaki verileri tamamen silmek için Docker terminalinden işlem yapılması gerekir.
+                  </p>
                 </div>
               </div>
             </div>
@@ -163,7 +165,7 @@ const Settings: React.FC = () => {
               <div className="flex justify-between py-2 border-b border-slate-50">
                 <span className="text-slate-500 text-sm">Veri Saklama</span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
-                  Local Browser Storage
+                  SQLite Database (Server-side)
                 </span>
               </div>
             </div>
