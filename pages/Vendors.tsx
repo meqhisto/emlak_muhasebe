@@ -1,18 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { Vendor, Expense, User, SystemLog, ExpenseCategory } from '../types';
+// import { useSystemLog } from '../hooks/useSystemLog';
 import { INITIAL_VENDORS } from '../constants';
 import Modal from '../components/Modal';
 import { Building, Plus, Search, Phone, Mail, FileText, User as UserIcon, AlertCircle, Calendar, Receipt, ChevronDown, ChevronUp } from 'lucide-react';
 
-interface VendorsProps {
-  currentUser: User;
-}
+import { useData } from '../contexts/DataContext';
+import { useAuth } from '../contexts/AuthContext';
 
-const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  
+const Vendors: React.FC = () => {
+  const { currentUser } = useAuth();
+  const { vendors, expenses, addVendor, updateVendor } = useData();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,34 +28,12 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
     category: ExpenseCategory.OTHER,
   });
 
-  useEffect(() => {
-    const storedVendors = localStorage.getItem('emlak_vendors');
-    setVendors(storedVendors ? JSON.parse(storedVendors) : INITIAL_VENDORS);
+  // State logic replaced by DataContext
 
-    const storedExpenses = localStorage.getItem('emlak_expenses');
-    setExpenses(storedExpenses ? JSON.parse(storedExpenses) : []);
-  }, []);
-
-  useEffect(() => {
-    if (vendors.length > 0) localStorage.setItem('emlak_vendors', JSON.stringify(vendors));
-  }, [vendors]);
-
-  const logAction = (action: 'CREATE' | 'UPDATE' | 'DELETE', description: string) => {
-    const newLog: SystemLog = {
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-      user: currentUser.name,
-      action: action,
-      module: 'VENDOR',
-      description: description
-    };
-    const storedLogs = localStorage.getItem('emlak_logs');
-    let logs = storedLogs ? JSON.parse(storedLogs) : [];
-    localStorage.setItem('emlak_logs', JSON.stringify([newLog, ...logs]));
-  };
+  // logAction function removed in favor of useSystemLog hook
 
   const getUnpaidExpensesByVendor = (vendorId: string) => {
-    return expenses.filter(e => e.vendorId === vendorId && !e.isPaid);
+    return (expenses || []).filter(e => e.vendorId === vendorId && !e.isPaid);
   };
 
   const formatCurrency = (amount: number) => {
@@ -76,12 +54,11 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
-      setVendors(prev => prev.map(v => v.id === editingId ? { ...v, ...formData } as Vendor : v));
-      logAction('UPDATE', `Firma Bilgisi Güncellendi: ${formData.name}`);
+      const updatedVendor = { ...vendors?.find(v => v.id === editingId)!, ...formData } as Vendor;
+      updateVendor(updatedVendor);
     } else {
       const newVendor: Vendor = { id: Date.now().toString(), ...formData as Omit<Vendor, 'id'> };
-      setVendors(prev => [...prev, newVendor]);
-      logAction('CREATE', `Yeni Firma/Tedarikçi Eklendi: ${newVendor.name}`);
+      addVendor(newVendor);
     }
     setIsModalOpen(false);
   };
@@ -90,7 +67,7 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
     setExpandedVendorId(expandedVendorId === vendorId ? null : vendorId);
   };
 
-  const filteredVendors = vendors.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredVendors = (vendors || []).filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="space-y-6">
@@ -107,11 +84,11 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
 
       <div className="relative">
         <Search className="absolute left-3 top-3 text-slate-400" size={20} />
-        <input 
-          type="text" 
-          placeholder="Firma adı ile ara..." 
-          value={searchTerm} 
-          onChange={(e) => setSearchTerm(e.target.value)} 
+        <input
+          type="text"
+          placeholder="Firma adı ile ara..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-3 bg-white text-slate-900 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
         />
       </div>
@@ -121,7 +98,7 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
           const unpaidItems = getUnpaidExpensesByVendor(vendor.id);
           const balance = unpaidItems.reduce((acc, curr) => acc + curr.amount, 0);
           const isExpanded = expandedVendorId === vendor.id;
-          
+
           return (
             <div key={vendor.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col">
               <div className="p-6 pb-4">
@@ -135,7 +112,7 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
                     </span>
                   )}
                 </div>
-                
+
                 <h3 className="text-lg font-bold text-slate-900 truncate mb-1">{vendor.name}</h3>
                 <p className="text-xs text-slate-500 flex items-center gap-1 mb-4">
                   <UserIcon size={12} /> {vendor.contactPerson || 'Yetkili belirtilmedi'}
@@ -158,38 +135,38 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
               {/* Açık Hesap Detayları Bölümü */}
               {balance > 0 && (
                 <div className="px-6 py-2">
-                   <button 
+                  <button
                     onClick={() => toggleExpand(vendor.id)}
                     className="w-full flex items-center justify-between py-2 px-3 bg-slate-50 hover:bg-slate-100 rounded-lg text-xs font-bold text-slate-600 transition-colors"
-                   >
-                     <span className="flex items-center gap-2"><Receipt size={14} className="text-orange-500" /> AÇIK HESAP DETAYI</span>
-                     {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                   </button>
-                   
-                   {isExpanded && (
-                     <div className="mt-2 space-y-2 animate-in slide-in-from-top-2 duration-200 overflow-hidden">
-                        <div className="bg-slate-50/50 rounded-lg border border-slate-100 overflow-hidden">
-                          <table className="w-full text-[11px] text-left">
-                            <thead className="bg-slate-100/50 text-slate-400 uppercase font-black">
-                              <tr>
-                                <th className="px-3 py-2">Tarih</th>
-                                <th className="px-3 py-2">Açıklama</th>
-                                <th className="px-3 py-2 text-right">Tutar</th>
+                  >
+                    <span className="flex items-center gap-2"><Receipt size={14} className="text-orange-500" /> AÇIK HESAP DETAYI</span>
+                    {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
+
+                  {isExpanded && (
+                    <div className="mt-2 space-y-2 animate-in slide-in-from-top-2 duration-200 overflow-hidden">
+                      <div className="bg-slate-50/50 rounded-lg border border-slate-100 overflow-hidden">
+                        <table className="w-full text-[11px] text-left">
+                          <thead className="bg-slate-100/50 text-slate-400 uppercase font-black">
+                            <tr>
+                              <th className="px-3 py-2">Tarih</th>
+                              <th className="px-3 py-2">Açıklama</th>
+                              <th className="px-3 py-2 text-right">Tutar</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {unpaidItems.map(item => (
+                              <tr key={item.id} className="text-slate-600">
+                                <td className="px-3 py-2 whitespace-nowrap">{new Date(item.date).toLocaleDateString('tr-TR')}</td>
+                                <td className="px-3 py-2 truncate max-w-[120px]">{item.description}</td>
+                                <td className="px-3 py-2 text-right font-bold text-slate-900">{formatCurrency(item.amount)}</td>
                               </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {unpaidItems.map(item => (
-                                <tr key={item.id} className="text-slate-600">
-                                  <td className="px-3 py-2 whitespace-nowrap">{new Date(item.date).toLocaleDateString('tr-TR')}</td>
-                                  <td className="px-3 py-2 truncate max-w-[120px]">{item.description}</td>
-                                  <td className="px-3 py-2 text-right font-bold text-slate-900">{formatCurrency(item.amount)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                     </div>
-                   )}
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -201,8 +178,8 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
                   </p>
                 </div>
                 <div className="flex gap-1">
-                  <button 
-                    onClick={() => handleOpenModal(vendor)} 
+                  <button
+                    onClick={() => handleOpenModal(vendor)}
                     className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
                     title="Firma Bilgilerini Düzenle"
                   >
@@ -219,30 +196,30 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">Firma Adı</label>
-            <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+            <input required type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Yetkili Kişi</label>
-              <input type="text" value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+              <input type="text" value={formData.contactPerson} onChange={e => setFormData({ ...formData, contactPerson: e.target.value })} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Telefon</label>
-              <input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+              <input required type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">E-Posta</label>
-            <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+            <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Vergi No</label>
-              <input type="text" value={formData.taxNumber} onChange={e => setFormData({...formData, taxNumber: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+              <input type="text" value={formData.taxNumber} onChange={e => setFormData({ ...formData, taxNumber: e.target.value })} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Vergi Dairesi</label>
-              <input type="text" value={formData.taxOffice} onChange={e => setFormData({...formData, taxOffice: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+              <input type="text" value={formData.taxOffice} onChange={e => setFormData({ ...formData, taxOffice: e.target.value })} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
           </div>
           <div className="pt-4 flex gap-3">

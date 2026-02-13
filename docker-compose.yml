@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  emlak-app:
+    build: .
+    ports:
+      - "3000:80"
+    container_name: emlak-muhasebe-app
+    restart: always

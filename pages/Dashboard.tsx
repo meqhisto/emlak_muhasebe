@@ -3,29 +3,30 @@ import { User, Consultant, Transaction, Expense } from '../types';
 import { INITIAL_CONSULTANTS, INITIAL_TRANSACTIONS, INITIAL_EXPENSES } from '../constants';
 import { ShieldCheck, Users, Banknote, CheckCircle2, TrendingUp, Building2, Receipt, Target, AlertTriangle } from 'lucide-react';
 
-interface DashboardProps {
-  user: User;
-}
+import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
 
-const Dashboard: React.FC<DashboardProps> = ({ user }) => {
+const Dashboard: React.FC = () => {
+  const { currentUser: user } = useAuth();
+  const { consultants, transactions, expenses } = useData();
   const [activeConsultantCount, setActiveConsultantCount] = useState<number>(0);
   const [totalRevenue, setTotalRevenue] = useState<number>(0);
   const [officeRevenue, setOfficeRevenue] = useState<number>(0);
   const [totalExpenses, setTotalExpenses] = useState<number>(0);
   const [unpaidDebts, setUnpaidDebts] = useState<number>(0);
-  
+
   // Goal State
   const [monthlyGoal] = useState<number>(100000);
 
   const stats = useMemo(() => {
-    const storedConsultants = localStorage.getItem('emlak_consultants');
-    const consultants: Consultant[] = storedConsultants ? JSON.parse(storedConsultants) : INITIAL_CONSULTANTS;
-
-    const storedTransactions = localStorage.getItem('emlak_transactions');
-    const transactions: Transaction[] = storedTransactions ? JSON.parse(storedTransactions) : INITIAL_TRANSACTIONS;
-
-    const storedExpenses = localStorage.getItem('emlak_expenses');
-    const expenses: Expense[] = storedExpenses ? JSON.parse(storedExpenses) : INITIAL_EXPENSES;
+    if (!consultants || !transactions || !expenses) return {
+      activeConsultants: 0,
+      totalRevenue: 0,
+      officeRevenue: 0,
+      totalExpenses: 0,
+      unpaidDebts: 0,
+      netProfit: 0,
+    };
 
     const totalRev = transactions.reduce((acc, t) => acc + t.totalRevenue, 0);
     const officeRev = transactions.reduce((acc, t) => acc + t.officeRevenue, 0);
@@ -40,7 +41,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       unpaidDebts: totalUnpaid,
       netProfit: officeRev - totalExp,
     };
-  }, []);
+  }, [consultants, transactions, expenses]);
 
   useEffect(() => {
     setActiveConsultantCount(stats.activeConsultants);
@@ -61,146 +62,146 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Hoş Geldiniz, {user.name}</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Hoş Geldiniz, {user?.name}</h1>
           <p className="text-slate-500">Ofisinizin güncel finansal durumuna göz atın.</p>
         </div>
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium border border-indigo-100">
           <ShieldCheck size={16} />
-          Yetki: {user.role}
+          Yetki: {user?.role}
         </div>
       </div>
 
       {/* Debt Warning Alert */}
       {unpaidDebts > 0 && (
-          <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl flex items-center justify-between animate-pulse">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="text-orange-600" size={24} />
-                <div>
-                    <h3 className="font-bold text-orange-900 text-sm">Bekleyen Ödemeleriniz Var!</h3>
-                    <p className="text-orange-700 text-xs">Toplam <strong>{formatCurrency(unpaidDebts)}</strong> tutarında ödenmemiş gider kaydı mevcut.</p>
-                </div>
-              </div>
-              <button onClick={() => window.location.hash = '/expenses'} className="text-xs font-bold text-orange-600 bg-white px-3 py-1.5 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors">Giderlere Git</button>
+        <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl flex items-center justify-between animate-pulse">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="text-orange-600" size={24} />
+            <div>
+              <h3 className="font-bold text-orange-900 text-sm">Bekleyen Ödemeleriniz Var!</h3>
+              <p className="text-orange-700 text-xs">Toplam <strong>{formatCurrency(unpaidDebts)}</strong> tutarında ödenmemiş gider kaydı mevcut.</p>
+            </div>
           </div>
+          <button onClick={() => window.location.hash = '/expenses'} className="text-xs font-bold text-orange-600 bg-white px-3 py-1.5 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors">Giderlere Git</button>
+        </div>
       )}
 
       {/* Main Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <Banknote size={64} className="text-emerald-600" />
-            </div>
-            <p className="text-sm font-medium text-slate-500">Toplam Ciro</p>
-            <p className="text-3xl font-bold text-slate-900 mt-1">{formatCurrency(totalRevenue)}</p>
-            <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-600">
-                <TrendingUp size={14} />
-                <span>Brüt Hacim</span>
-            </div>
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Banknote size={64} className="text-emerald-600" />
+          </div>
+          <p className="text-sm font-medium text-slate-500">Toplam Ciro</p>
+          <p className="text-3xl font-bold text-slate-900 mt-1">{formatCurrency(totalRevenue)}</p>
+          <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-600">
+            <TrendingUp size={14} />
+            <span>Brüt Hacim</span>
+          </div>
         </div>
 
         <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden text-white">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Building2 size={64} className="text-white" />
-            </div>
-            <p className="text-sm font-medium text-slate-400">Ofis Geliri (Brüt)</p>
-            <p className="text-3xl font-bold text-white mt-1">{formatCurrency(officeRevenue)}</p>
-            <div className="mt-4 flex items-center gap-1 text-xs font-bold text-indigo-400 uppercase">
-                Pay: %{Math.round((stats.officeRevenue / (stats.totalRevenue || 1)) * 100)}
-            </div>
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <Building2 size={64} className="text-white" />
+          </div>
+          <p className="text-sm font-medium text-slate-400">Ofis Geliri (Brüt)</p>
+          <p className="text-3xl font-bold text-white mt-1">{formatCurrency(officeRevenue)}</p>
+          <div className="mt-4 flex items-center gap-1 text-xs font-bold text-indigo-400 uppercase">
+            Pay: %{Math.round((stats.officeRevenue / (stats.totalRevenue || 1)) * 100)}
+          </div>
         </div>
 
         <div className="bg-emerald-600 p-6 rounded-2xl shadow-lg shadow-emerald-900/10 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-20">
-                <CheckCircle2 size={64} className="text-white" />
-            </div>
-            <p className="text-sm font-medium text-emerald-100">Net Kâr</p>
-            <p className="text-3xl font-bold text-white mt-1">{formatCurrency(stats.netProfit)}</p>
-            <p className="text-xs text-emerald-100 mt-4 italic">Giderler sonrası kalan tutar</p>
+          <div className="absolute top-0 right-0 p-4 opacity-20">
+            <CheckCircle2 size={64} className="text-white" />
+          </div>
+          <p className="text-sm font-medium text-emerald-100">Net Kâr</p>
+          <p className="text-3xl font-bold text-white mt-1">{formatCurrency(stats.netProfit)}</p>
+          <p className="text-xs text-emerald-100 mt-4 italic">Giderler sonrası kalan tutar</p>
         </div>
       </div>
 
       {/* Goal Tracker */}
       <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                  <div className="p-3 bg-rose-50 text-rose-500 rounded-xl">
-                    <Target size={28} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xl text-slate-800">Aylık Performans Hedefi</h3>
-                    <p className="text-sm text-slate-500">Bu ayki ciro hedefine olan ilerlemeniz</p>
-                  </div>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-slate-400 uppercase font-bold mb-1">Hedef</p>
-                <p className="text-lg font-bold text-slate-700 bg-slate-100 px-4 py-1.5 rounded-lg border border-slate-200">
-                    {formatCurrency(monthlyGoal)}
-                </p>
-              </div>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-rose-50 text-rose-500 rounded-xl">
+              <Target size={28} />
+            </div>
+            <div>
+              <h3 className="font-bold text-xl text-slate-800">Aylık Performans Hedefi</h3>
+              <p className="text-sm text-slate-500">Bu ayki ciro hedefine olan ilerlemeniz</p>
+            </div>
           </div>
-          
-          <div className="space-y-6">
-              <div className="flex justify-between items-end">
-                  <span className="text-sm font-bold text-slate-600 uppercase tracking-wider">Mevcut Durum</span>
-                  <span className={`text-2xl font-black ${goalProgress >= 100 ? "text-emerald-600" : "text-indigo-600"}`}>
-                      %{Math.round(goalProgress)}
-                  </span>
-              </div>
-              <div className="w-full bg-slate-100 h-6 rounded-full overflow-hidden border border-slate-200 p-1">
-                  <div 
-                      className={`h-full rounded-full transition-all duration-1000 ease-out shadow-sm relative ${goalProgress >= 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-indigo-500 to-indigo-600'}`} 
-                      style={{ width: `${goalProgress}%` }}
-                  >
-                    {goalProgress > 10 && (
-                        <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-                    )}
-                  </div>
-              </div>
-              <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100">
-                  <p className="text-sm text-slate-600">
-                    Kalan İhtiyaç: <span className="font-bold text-slate-900">{formatCurrency(Math.max(0, monthlyGoal - totalRevenue))}</span>
-                  </p>
-                  {goalProgress >= 100 && (
-                      <span className="flex items-center gap-2 text-sm font-bold text-emerald-600">
-                          <CheckCircle2 size={18} /> Tebrikler, Aylık Hedef Yakalandı!
-                      </span>
-                  )}
-              </div>
+          <div className="text-right">
+            <p className="text-xs text-slate-400 uppercase font-bold mb-1">Hedef</p>
+            <p className="text-lg font-bold text-slate-700 bg-slate-100 px-4 py-1.5 rounded-lg border border-slate-200">
+              {formatCurrency(monthlyGoal)}
+            </p>
           </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex justify-between items-end">
+            <span className="text-sm font-bold text-slate-600 uppercase tracking-wider">Mevcut Durum</span>
+            <span className={`text-2xl font-black ${goalProgress >= 100 ? "text-emerald-600" : "text-indigo-600"}`}>
+              %{Math.round(goalProgress)}
+            </span>
+          </div>
+          <div className="w-full bg-slate-100 h-6 rounded-full overflow-hidden border border-slate-200 p-1">
+            <div
+              className={`h-full rounded-full transition-all duration-1000 ease-out shadow-sm relative ${goalProgress >= 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-indigo-500 to-indigo-600'}`}
+              style={{ width: `${goalProgress}%` }}
+            >
+              {goalProgress > 10 && (
+                <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <p className="text-sm text-slate-600">
+              Kalan İhtiyaç: <span className="font-bold text-slate-900">{formatCurrency(Math.max(0, monthlyGoal - totalRevenue))}</span>
+            </p>
+            {goalProgress >= 100 && (
+              <span className="flex items-center gap-2 text-sm font-bold text-emerald-600">
+                <CheckCircle2 size={18} /> Tebrikler, Aylık Hedef Yakalandı!
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Secondary Info Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-            <div className="flex items-center gap-4">
-                <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
-                    <Receipt size={24} />
-                </div>
-                <div>
-                    <h4 className="font-bold text-slate-800">Toplam Giderler</h4>
-                    <p className="text-2xl font-bold text-rose-600">{formatCurrency(stats.totalExpenses)}</p>
-                </div>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
+              <Receipt size={24} />
             </div>
-            <div className="text-right">
-                <p className="text-[10px] text-slate-400 uppercase font-bold">Gider Oranı</p>
-                <p className="text-sm font-bold text-slate-600">%{Math.round((stats.totalExpenses / (stats.officeRevenue || 1)) * 100)}</p>
+            <div>
+              <h4 className="font-bold text-slate-800">Toplam Giderler</h4>
+              <p className="text-2xl font-bold text-rose-600">{formatCurrency(stats.totalExpenses)}</p>
             </div>
-         </div>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] text-slate-400 uppercase font-bold">Gider Oranı</p>
+            <p className="text-sm font-bold text-slate-600">%{Math.round((stats.totalExpenses / (stats.officeRevenue || 1)) * 100)}</p>
+          </div>
+        </div>
 
-         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-            <div className="flex items-center gap-4">
-                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-                    <Users size={24} />
-                </div>
-                <div>
-                    <h4 className="font-bold text-slate-800">Aktif Kadro</h4>
-                    <p className="text-2xl font-bold text-slate-900">{stats.activeConsultants} Danışman</p>
-                </div>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+              <Users size={24} />
             </div>
-            <div className="bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
-                <span className="text-xs font-bold text-indigo-600">Ekip Aktif</span>
+            <div>
+              <h4 className="font-bold text-slate-800">Aktif Kadro</h4>
+              <p className="text-2xl font-bold text-slate-900">{stats.activeConsultants} Danışman</p>
             </div>
-         </div>
+          </div>
+          <div className="bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+            <span className="text-xs font-bold text-indigo-600">Ekip Aktif</span>
+          </div>
+        </div>
       </div>
     </div>
   );

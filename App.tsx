@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { DataProvider } from './contexts/DataContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -6,56 +9,77 @@ import Consultants from './pages/Consultants';
 import Transactions from './pages/Transactions';
 import Expenses from './pages/Expenses';
 import PersonnelPage from './pages/Personnel';
-import Vendors from './pages/Vendors'; // Yeni sayfa eklendi
+import Vendors from './pages/Vendors';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import { User } from './types';
+import PrintTransaction from './pages/PrintTransaction'; // Yeni print sayfası
+// import { User } from './types'; // User type is now handled by AuthContext
 
-const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState('/');
+function AppContent() {
+  const { currentUser, isAuthenticated, login, logout } = useAuth();
+  const location = useLocation();
+  const [currentPage, setCurrentPage] = useState('/'); // Keep for print mode logic, though router will handle most navigation
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('emlak_user');
-    if (storedUser) {
-      try { setUser(JSON.parse(storedUser)); } catch (e) { localStorage.removeItem('emlak_user'); }
+    // Check for print mode in URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('print') === 'true') {
+      setCurrentPage('print-transaction');
+      return;
     }
-  }, []);
+    // If not in print mode, update currentPage based on router location
+    setCurrentPage(location.pathname);
+  }, [location.pathname]);
 
-  const handleLogin = (newUser: User) => {
-    setUser(newUser);
-    localStorage.setItem('emlak_user', JSON.stringify(newUser));
-    setCurrentPage('/');
-  };
+  // const handleLogin = (newUser: User) => { // This is now handled by AuthContext's login function
+  //   setUser(newUser);
+  //   localStorage.setItem('emlak_user', JSON.stringify(newUser));
+  //   setCurrentPage('/');
+  // };
 
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('emlak_user');
-    setCurrentPage('/');
-  };
+  // const handleLogout = () => { // This is now handled by AuthContext's logout function
+  //   setUser(null);
+  //   localStorage.removeItem('emlak_user');
+  //   setCurrentPage('/');
+  // };
 
-  const renderPage = () => {
-    if (!user) return <Login onLogin={handleLogin} />;
-    switch (currentPage) {
-      case '/': return <Dashboard user={user} />;
-      case '/consultants': return <Consultants currentUser={user} />;
-      case '/vendors': return <Vendors currentUser={user} />; // Yeni route
-      case '/personnel': return <PersonnelPage currentUser={user} />;
-      case '/transactions': return <Transactions currentUser={user} />;
-      case '/expenses': return <Expenses currentUser={user} />;
-      case '/reports': return <Reports />;
-      case '/settings': return <Settings currentUser={user} />;
-      default: return <Dashboard user={user} />;
-    }
-  };
+  // Print page doesn't need auth or layout
+  // if (currentPage === 'print-transaction') { // This logic will now be handled by a route
+  //   return <PrintTransaction />;
+  // }
 
-  if (!user) return <Login onLogin={handleLogin} />;
+  if (!isAuthenticated) {
+    return <Login />;
+  }
 
   return (
-    <Layout user={user} onLogout={handleLogout} currentPage={currentPage} onNavigate={setCurrentPage}>
-      {renderPage()}
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/consultants" element={<Consultants />} />
+        <Route path="/vendors" element={<Vendors />} />
+        <Route path="/personnel" element={<PersonnelPage />} />
+        <Route path="/transactions" element={<Transactions />} />
+        <Route path="/expenses" element={<Expenses />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/print-transaction" element={<PrintTransaction />} /> {/* Add route for print page */}
+        <Route path="*" element={<Navigate to="/" replace />} /> {/* Redirect any unknown routes to dashboard */}
+      </Routes>
     </Layout>
   );
-};
+}
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <DataProvider>
+          <AppContent />
+        </DataProvider>
+      </AuthProvider>
+    </Router>
+  );
+}
 
 export default App;
