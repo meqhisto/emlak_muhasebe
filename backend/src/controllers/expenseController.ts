@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma';
+import { prepareData } from '../utils/dataUtils';
 
 export const getExpenses = async (req: Request, res: Response) => {
     try {
@@ -15,11 +16,13 @@ export const getExpenses = async (req: Request, res: Response) => {
 
 export const createExpense = async (req: Request, res: Response) => {
     try {
+        const data = prepareData(req.body, ['date']);
         const expense = await prisma.expense.create({
-            data: req.body
+            data
         });
         res.status(201).json(expense);
     } catch (error) {
+        console.error("Expense creation error:", error);
         res.status(500).json({ error: 'Gider oluşturulurken bir hata oluştu.' });
     }
 };
@@ -27,9 +30,10 @@ export const createExpense = async (req: Request, res: Response) => {
 export const updateExpense = async (req: Request, res: Response) => {
     const id = req.params.id as string;
     try {
+        const data = prepareData(req.body, ['date']);
         const expense = await prisma.expense.update({
             where: { id },
-            data: req.body
+            data
         });
         res.json(expense);
     } catch (error) {

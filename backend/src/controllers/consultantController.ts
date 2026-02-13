@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma';
+import { prepareData } from '../utils/dataUtils';
 
 export const getConsultants = async (req: Request, res: Response) => {
     try {
@@ -14,11 +15,13 @@ export const getConsultants = async (req: Request, res: Response) => {
 
 export const createConsultant = async (req: Request, res: Response) => {
     try {
+        const data = prepareData(req.body, ['startDate']);
         const consultant = await prisma.consultant.create({
-            data: req.body
+            data
         });
         res.status(201).json(consultant);
     } catch (error) {
+        console.error("Consultant creation error:", error);
         res.status(500).json({ error: 'Danışman oluşturulurken bir hata oluştu.' });
     }
 };
@@ -26,9 +29,10 @@ export const createConsultant = async (req: Request, res: Response) => {
 export const updateConsultant = async (req: Request, res: Response) => {
     const id = req.params.id as string;
     try {
+        const data = prepareData(req.body, ['startDate']);
         const consultant = await prisma.consultant.update({
             where: { id },
-            data: req.body
+            data
         });
         res.json(consultant);
     } catch (error) {
