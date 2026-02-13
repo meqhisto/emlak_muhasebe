@@ -44,8 +44,8 @@ Bu komut:
 
 ## 🌐 Erişim
 
-- **Web Uygulaması**: [http://localhost:3000](http://localhost:3000) (Sunucu IP'niz:3000)
-- **API Erişimi**: Arkaplanda `3001` üzerinde çalışır.
+- **Web Uygulaması**: [http://localhost:3005](http://localhost:3005) (Sunucu IP'niz:3005)
+- **API Erişimi**: Arkaplanda `3006` üzerinde çalışır.
 
 ## 💾 Veritabanı Kalıcılığı (Persistence)
 

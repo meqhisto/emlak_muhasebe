@@ -5,7 +5,7 @@ services:
     build: ./backend
     container_name: emlak-muhasebe-backend
     ports:
-      - "3001:3001"
+      - "3006:3001"
     volumes:
       # Persist the sqlite database
       - ./backend/prisma:/app/prisma
@@ -19,7 +19,7 @@ services:
     build: .
     container_name: emlak-muhasebe-frontend
     ports:
-      - "3000:80"
+      - "3005:80"
     restart: always
     depends_on:
       - backend
