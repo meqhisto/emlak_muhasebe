@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { User, UserRole } from '../types';
 import { APP_NAME, NAVIGATION_ITEMS } from '../constants';
@@ -43,6 +44,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, currentPage, 
         className={`
           fixed lg:static inset-y-0 left-0 z-30
           w-64 bg-slate-900 text-white transform transition-transform duration-200 ease-in-out
+          print:hidden
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
@@ -110,7 +112,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, currentPage, 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile Header */}
-        <header className="bg-white border-b border-slate-200 lg:hidden px-4 h-16 flex items-center justify-between">
+        <header className="bg-white border-b border-slate-200 lg:hidden px-4 h-16 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-3">
              <button 
               onClick={() => setIsMobileMenuOpen(true)}
@@ -123,7 +125,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, currentPage, 
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-4 lg:p-8">
+        <main className="flex-1 overflow-auto p-4 lg:p-8 print:p-0 print:overflow-visible">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
