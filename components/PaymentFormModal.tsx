@@ -32,17 +32,22 @@ const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
     const printWindow = window.open('', '_blank', 'width=900,height=800');
     if (!printWindow) return;
 
+    // Mevcut sayfadaki tüm CSS'leri topla
+    const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+      .map(el => el.outerHTML)
+      .join('\n');
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
         <title>Hakediş Belgesi - ${consultant.fullName}</title>
-        <link rel="stylesheet" href="/assets/index.css" />
+        ${styles}
         <style>
-          body { margin: 0; padding: 0; background: white; }
+          body { margin: 0; padding: 20px; background: white; }
           .no-print { display: none !important; }
           @media print {
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           }
         </style>
       </head>
@@ -50,7 +55,7 @@ const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
         ${content.innerHTML}
         <script>
           window.onload = function() {
-            setTimeout(function() { window.print(); }, 300);
+            setTimeout(function() { window.print(); }, 500);
           };
         <\/script>
       </body>
