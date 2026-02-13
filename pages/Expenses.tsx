@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Expense, ExpenseCategory, Payer, User, SystemLog, Vendor } from '../types';
 import { INITIAL_EXPENSES, INITIAL_VENDORS } from '../constants';
 import Modal from '../components/Modal';
-import { Plus, Search, Filter, Receipt, Calendar, Tag, UserCircle, Building2, RefreshCw, FileText, PieChart, StickyNote, Trash2, Edit, AlertCircle, CheckCircle, Clock, Building } from 'lucide-react';
+import { Plus, Search, Filter, Receipt, Calendar, Tag, UserCircle, Building2, RefreshCw, FileText, PieChart, StickyNote, Trash2, Edit, AlertCircle, CheckCircle, Clock, Building, User as UserIcon } from 'lucide-react';
 
 interface ExpensesProps {
   currentUser: User;
@@ -24,8 +25,6 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
   
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
   const [filterStatus, setFilterStatus] = useState<string>('ALL'); 
-  const [filterDateStart, setFilterDateStart] = useState('');
-  const [filterDateEnd, setFilterDateEnd] = useState('');
 
   // Form State
   const [formData, setFormData] = useState({
@@ -36,7 +35,7 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
     paidBy: Payer.OFFICE,
     notes: '',
     isPaid: true,
-    vendorId: '', // Yeni: Firma seçimi için
+    vendorId: '',
   });
 
   // Load Data
@@ -134,7 +133,7 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
         vendorId: formData.vendorId || undefined,
       };
       setExpenses(prev => [newExpense, ...prev]);
-      logAction('CREATE', `Yeni Gider: ${formData.description}`);
+      logAction('CREATE', `Yeni Gider: ${formData.description} (${formData.paidBy} tarafından)`);
     }
     setIsModalOpen(false);
   };
@@ -161,6 +160,15 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
     return labels[cat] || cat;
   };
 
+  const getPayerLabel = (payer: Payer) => {
+    switch(payer) {
+      case Payer.ALTAN: return 'Altan';
+      case Payer.SUAT: return 'Suat';
+      case Payer.OFFICE: return 'Ofis Kasası';
+      default: return payer;
+    }
+  };
+
   const filteredExpenses = expenses.filter(e => {
     const matchesSearch = e.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = filterCategory === 'ALL' || e.category === filterCategory;
@@ -173,7 +181,7 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Gider Yönetimi</h1>
-          <p className="text-slate-500">Ofis harcamalarını ve cari borçları takip edin.</p>
+          <p className="text-slate-500">Ofis harcamalarını ve ortakların yaptığı ödemeleri takip edin.</p>
         </div>
         <button onClick={() => handleOpenModal()} className="flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-lg font-medium shadow-sm transition-colors">
           <Plus size={20} />
@@ -198,7 +206,7 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="px-6 py-4 font-semibold text-slate-700">Tarih</th>
-                <th className="px-6 py-4 font-semibold text-slate-700">Firma / Cari</th>
+                <th className="px-6 py-4 font-semibold text-slate-700">Ödeyen / Cari</th>
                 <th className="px-6 py-4 font-semibold text-slate-700">Açıklama</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-right">Tutar</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-center">Durum</th>
@@ -206,10 +214,20 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredExpenses.map((expense) => (
-                <tr key={expense.id} onClick={() => { setSelectedExpense(expense); setIsViewModalOpen(true); }} className="hover:bg-slate-50/50 transition-colors cursor-pointer">
+                <tr key={expense.id} onClick={() => handleOpenModal(expense)} className="hover:bg-slate-50/50 transition-colors cursor-pointer group">
                   <td className="px-6 py-4 text-slate-500">{new Date(expense.date).toLocaleDateString('tr-TR')}</td>
-                  <td className="px-6 py-4 font-bold text-slate-800">{getVendorName(expense.vendorId)}</td>
-                  <td className="px-6 py-4 text-slate-600">{expense.description}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter mb-0.5">{getPayerLabel(expense.paidBy)}</span>
+                        <span className="font-bold text-slate-800">{getVendorName(expense.vendorId)}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-slate-600">
+                    <div className="flex items-center gap-2">
+                        <span className="px-1.5 py-0.5 bg-slate-100 text-[9px] font-bold text-slate-500 rounded uppercase">{getCategoryLabel(expense.category)}</span>
+                        {expense.description}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 text-right font-black text-rose-600">-{formatCurrency(expense.amount)}</td>
                   <td className="px-6 py-4 text-center">
                     {expense.isPaid ? (
@@ -227,17 +245,33 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? 'Gider Düzenle' : 'Yeni Gider Kaydı'}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Firma / Cari Seçimi (Opsiyonel)</label>
-            <select value={formData.vendorId} onChange={e => setFormData({...formData, vendorId: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-white">
-              <option value="">Firma Seçilmedi (Genel Gider)</option>
-              {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Ödemeyi Yapan</label>
+                <select 
+                    value={formData.paidBy} 
+                    onChange={e => setFormData({...formData, paidBy: e.target.value as Payer})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-indigo-50/30 font-semibold text-slate-800"
+                >
+                    <option value={Payer.OFFICE}>Ofis Kasası</option>
+                    <option value={Payer.ALTAN}>Altan (Ortak)</option>
+                    <option value={Payer.SUAT}>Suat (Ortak)</option>
+                </select>
+            </div>
+            <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Firma / Cari</label>
+                <select value={formData.vendorId} onChange={e => setFormData({...formData, vendorId: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-white">
+                <option value="">Firma Seçilmedi</option>
+                {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                </select>
+            </div>
           </div>
+
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">Açıklama</label>
-            <input required type="text" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+            <input required type="text" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500" placeholder="Örn: Ekim Ayı Elektrik Faturası" />
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Kategori</label>
@@ -250,18 +284,29 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
               <input required type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
             </div>
           </div>
+
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">Tutar</label>
-            <input required type="number" min="0" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none font-bold" />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Ödeme Durumu</label>
-            <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => setFormData({...formData, isPaid: true})} className={`py-2 rounded-lg border text-sm font-bold ${formData.isPaid ? 'bg-emerald-600 text-white' : 'bg-white text-slate-500'}`}>Ödendi</button>
-                <button type="button" onClick={() => setFormData({...formData, isPaid: false})} className={`py-2 rounded-lg border text-sm font-bold ${!formData.isPaid ? 'bg-orange-600 text-white' : 'bg-white text-slate-500'}`}>Borç Kaydet</button>
+            <div className="relative">
+                <span className="absolute left-3 top-2.5 text-slate-400 font-bold">₺</span>
+                <input required type="number" min="0" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} className="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg outline-none font-bold text-lg text-rose-600" placeholder="0.00" />
             </div>
           </div>
-          <button type="submit" className="w-full px-4 py-3 bg-rose-600 text-white rounded-lg font-bold mt-4 shadow-lg active:scale-95 transition-transform">Gideri Kaydet</button>
+
+          <div className="space-y-1.5 pt-2">
+            <label className="text-sm font-medium text-slate-700">Ödeme Durumu</label>
+            <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setFormData({...formData, isPaid: true})} className={`py-2 rounded-lg border text-sm font-bold transition-all ${formData.isPaid ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-400 border-slate-200'}`}>Ödendi / Kapalı</button>
+                <button type="button" onClick={() => setFormData({...formData, isPaid: false})} className={`py-2 rounded-lg border text-sm font-bold transition-all ${!formData.isPaid ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-slate-400 border-slate-200'}`}>Borç Kaydet / Açık</button>
+            </div>
+          </div>
+
+          <div className="pt-4 flex gap-3">
+             <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3 text-slate-600 font-medium hover:bg-slate-50 rounded-lg">İptal</button>
+             <button type="submit" className="flex-[2] py-3 bg-rose-600 text-white rounded-lg font-bold shadow-lg shadow-rose-900/20 active:scale-95 transition-transform">
+                 {editingId ? 'Güncelle' : 'Gideri Kaydet'}
+             </button>
+          </div>
         </form>
       </Modal>
     </div>
