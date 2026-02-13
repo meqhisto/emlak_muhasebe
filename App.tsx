@@ -55,9 +55,9 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        {/* <DataProvider> */}
-        <AppContent />
-        {/* </DataProvider> */}
+        <DataProvider>
+          <AppContent />
+        </DataProvider>
       </AuthProvider>
     </Router>
   );
