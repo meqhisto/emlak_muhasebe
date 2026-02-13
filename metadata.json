@@ -1,0 +1,5 @@
+{
+  "name": "Emlak Ofisi Muhasebe",
+  "description": "Emlak ofisi için özel muhasebe ve danışman yönetim sistemi. Faz 0: Altyapı ve Kimlik Doğrulama.",
+  "requestFramePermissions": []
+}
