@@ -24,7 +24,7 @@
     "prisma": "^5.10.2"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "node dist/prisma/seed.js"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
