@@ -166,7 +166,9 @@ const PersonnelPage: React.FC<PersonnelProps> = ({ currentUser }) => {
         amount: Number(paymentForm.amount),
         date: paymentForm.date,
         description: `${paymentForm.period} Maaş Ödemesi - ${selectedEmp.fullName}`,
-        paidBy: Payer.OFFICE
+        paidBy: Payer.OFFICE,
+        // Fix: Added missing required isPaid property
+        isPaid: true
     };
     setExpenses(prev => [newExpense, ...prev]);
 

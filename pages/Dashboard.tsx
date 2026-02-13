@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { User, Consultant, Transaction, Expense } from '../types';
 import { INITIAL_CONSULTANTS, INITIAL_TRANSACTIONS, INITIAL_EXPENSES } from '../constants';
-import { ShieldCheck, Users, Banknote, CheckCircle2, TrendingUp, Building2, Receipt, Target } from 'lucide-react';
+import { ShieldCheck, Users, Banknote, CheckCircle2, TrendingUp, Building2, Receipt, Target, AlertTriangle } from 'lucide-react';
 
 interface DashboardProps {
   user: User;
@@ -12,6 +12,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [totalRevenue, setTotalRevenue] = useState<number>(0);
   const [officeRevenue, setOfficeRevenue] = useState<number>(0);
   const [totalExpenses, setTotalExpenses] = useState<number>(0);
+  const [unpaidDebts, setUnpaidDebts] = useState<number>(0);
   
   // Goal State
   const [monthlyGoal] = useState<number>(100000);
@@ -29,12 +30,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     const totalRev = transactions.reduce((acc, t) => acc + t.totalRevenue, 0);
     const officeRev = transactions.reduce((acc, t) => acc + t.officeRevenue, 0);
     const totalExp = expenses.reduce((acc, e) => acc + e.amount, 0);
+    const totalUnpaid = expenses.filter(e => !e.isPaid).reduce((acc, e) => acc + e.amount, 0);
 
     return {
       activeConsultants: consultants.filter(c => c.isActive).length,
       totalRevenue: totalRev,
       officeRevenue: officeRev,
       totalExpenses: totalExp,
+      unpaidDebts: totalUnpaid,
       netProfit: officeRev - totalExp,
     };
   }, []);
@@ -44,6 +47,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     setTotalRevenue(stats.totalRevenue);
     setOfficeRevenue(stats.officeRevenue);
     setTotalExpenses(stats.totalExpenses);
+    setUnpaidDebts(stats.unpaidDebts);
   }, [stats]);
 
   const formatCurrency = (amount: number) => {
@@ -65,6 +69,20 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           Yetki: {user.role}
         </div>
       </div>
+
+      {/* Debt Warning Alert */}
+      {unpaidDebts > 0 && (
+          <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl flex items-center justify-between animate-pulse">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="text-orange-600" size={24} />
+                <div>
+                    <h3 className="font-bold text-orange-900 text-sm">Bekleyen Ödemeleriniz Var!</h3>
+                    <p className="text-orange-700 text-xs">Toplam <strong>{formatCurrency(unpaidDebts)}</strong> tutarında ödenmemiş gider kaydı mevcut.</p>
+                </div>
+              </div>
+              <button onClick={() => window.location.hash = '/expenses'} className="text-xs font-bold text-orange-600 bg-white px-3 py-1.5 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors">Giderlere Git</button>
+          </div>
+      )}
 
       {/* Main Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -101,7 +119,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Goal Tracker - Now Full Width */}
+      {/* Goal Tracker */}
       <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">

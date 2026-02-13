@@ -12,17 +12,30 @@ export interface User {
   role: UserRole;
 }
 
-// --- DANIŞMAN ŞEMASI (Faz 1) ---
+// --- DANIŞMAN ŞEMASI ---
 export interface Consultant {
   id: string;
   fullName: string;
   phoneNumber: string;
-  commissionRate: number; // Yüzde olarak (örn: 50)
-  startDate: string; // ISO Date
+  commissionRate: number; 
+  startDate: string; 
   isActive: boolean;
 }
 
-// --- İŞLEM & GELİR ŞEMASI (Faz 2 & 3) ---
+// --- TEDARİKÇİ / FİRMA ŞEMASI (Cari Takip) ---
+export interface Vendor {
+  id: string;
+  name: string; // Firma Adı
+  contactPerson?: string; // İlgili Kişi
+  phone: string;
+  email?: string;
+  taxNumber?: string;
+  taxOffice?: string;
+  category: ExpenseCategory; // Ana faaliyet alanı
+  notes?: string;
+}
+
+// --- İŞLEM & GELİR ŞEMASI ---
 export enum TransactionType {
   SALE = 'SATIS',
   RENT = 'KIRALAMA',
@@ -30,29 +43,25 @@ export enum TransactionType {
 
 export enum PaymentStatus {
   PENDING = 'BEKLIYOR',
-  PAID = 'ODENDI', // İmzalandı / Kapandı
+  PAID = 'ODENDI',
 }
 
 export interface Transaction {
   id: string;
-  propertyName: string; // Serbest metin
+  propertyName: string;
   type: TransactionType;
   customerName: string;
-  consultantId: string; // Consultant FK
-  date: string; // ISO Date
-  totalRevenue: number; // Toplam Ciro
-  
-  // Otomatik Hesaplanan Alanlar
-  officeRevenue: number; // Ciro * (1 - Danışman Oranı) veya direkt Ofise Kalan
-  consultantShare: number; // Ciro * Danışman Oranı
-  partnerShareAltan: number; // Ofise Kalan / 2
-  partnerShareSuat: number; // Ofise Kalan / 2
-
-  // Faz 3: Hakediş Durumu
+  consultantId: string;
+  date: string;
+  totalRevenue: number;
+  officeRevenue: number;
+  consultantShare: number;
+  partnerShareAltan: number;
+  partnerShareSuat: number;
   paymentStatus: PaymentStatus;
 }
 
-// --- GİDER ŞEMASI (Faz 4) ---
+// --- GİDER ŞEMASI ---
 export enum ExpenseCategory {
   OFFICE_SUPPLIES = 'OFIS_MALZEMELERI',
   RENT = 'KIRA',
@@ -77,13 +86,15 @@ export interface Expense {
   description: string;
   paidBy: Payer;
   notes?: string;
+  isPaid: boolean;
+  vendorId?: string; // Yeni: Hangi firmaya ait olduğu (Cari bağlantısı)
 }
 
-// --- MAAŞ & PERSONEL ŞEMASI (Faz 5) ---
+// --- MAAŞ & PERSONEL ŞEMASI ---
 export interface Personnel {
   id: string;
   fullName: string;
-  role: string; // Örn: Ofis Asistanı, Çaycı, Temizlik
+  role: string;
   monthlySalary: number;
   startDate: string;
   isActive: boolean;
@@ -94,16 +105,16 @@ export interface SalaryPayment {
   personnelId: string;
   amount: number;
   date: string;
-  period: string; // "2023-10" (Yıl-Ay)
+  period: string;
   isPaid: boolean;
 }
 
-// --- LOG SİSTEMİ (Güvenlik) ---
+// --- LOG SİSTEMİ ---
 export interface SystemLog {
   id: string;
-  date: string; // ISO Timestamp
-  user: string; // User Name
+  date: string;
+  user: string;
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'RESET';
-  module: 'EXPENSE' | 'TRANSACTION' | 'SYSTEM' | 'PERSONNEL' | 'CONSULTANT';
+  module: 'EXPENSE' | 'TRANSACTION' | 'SYSTEM' | 'PERSONNEL' | 'CONSULTANT' | 'VENDOR';
   description: string;
 }

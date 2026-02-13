@@ -1,0 +1,261 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { Vendor, Expense, User, SystemLog, ExpenseCategory } from '../types';
+import { INITIAL_VENDORS } from '../constants';
+import Modal from '../components/Modal';
+import { Building, Plus, Search, Phone, Mail, FileText, Wallet, ArrowRight, User as UserIcon, AlertCircle, Calendar, Receipt, ChevronRight } from 'lucide-react';
+
+interface VendorsProps {
+  currentUser: User;
+}
+
+const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const [formData, setFormData] = useState<Partial<Vendor>>({
+    name: '',
+    contactPerson: '',
+    phone: '',
+    email: '',
+    taxNumber: '',
+    taxOffice: '',
+    category: ExpenseCategory.OTHER,
+  });
+
+  useEffect(() => {
+    const storedVendors = localStorage.getItem('emlak_vendors');
+    setVendors(storedVendors ? JSON.parse(storedVendors) : INITIAL_VENDORS);
+
+    const storedExpenses = localStorage.getItem('emlak_expenses');
+    setExpenses(storedExpenses ? JSON.parse(storedExpenses) : []);
+  }, []);
+
+  useEffect(() => {
+    if (vendors.length > 0) localStorage.setItem('emlak_vendors', JSON.stringify(vendors));
+  }, [vendors]);
+
+  const logAction = (action: 'CREATE' | 'UPDATE' | 'DELETE', description: string) => {
+    const newLog: SystemLog = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      user: currentUser.name,
+      action: action,
+      module: 'VENDOR',
+      description: description
+    };
+    const storedLogs = localStorage.getItem('emlak_logs');
+    let logs = storedLogs ? JSON.parse(storedLogs) : [];
+    localStorage.setItem('emlak_logs', JSON.stringify([newLog, ...logs]));
+  };
+
+  const getUnpaidExpensesByVendor = (vendorId: string) => {
+    return expenses.filter(e => e.vendorId === vendorId && !e.isPaid);
+  };
+
+  const getVendorBalance = (vendorId: string) => {
+    return getUnpaidExpensesByVendor(vendorId).reduce((acc, curr) => acc + curr.amount, 0);
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
+  };
+
+  const handleOpenModal = (vendor?: Vendor) => {
+    if (vendor) {
+      setEditingId(vendor.id);
+      setFormData({ ...vendor });
+    } else {
+      setEditingId(null);
+      setFormData({ name: '', contactPerson: '', phone: '', email: '', category: ExpenseCategory.OTHER });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingId) {
+      setVendors(prev => prev.map(v => v.id === editingId ? { ...v, ...formData } as Vendor : v));
+      logAction('UPDATE', `Firma Bilgisi Güncellendi: ${formData.name}`);
+    } else {
+      const newVendor: Vendor = { id: Date.now().toString(), ...formData as Omit<Vendor, 'id'> };
+      setVendors(prev => [...prev, newVendor]);
+      logAction('CREATE', `Yeni Firma/Tedarikçi Eklendi: ${newVendor.name}`);
+    }
+    setIsModalOpen(false);
+  };
+
+  const filteredVendors = vendors.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Firmalar & Cariler</h1>
+          <p className="text-slate-500">Hizmet alınan tedarikçileri ve borç bakiyelerini yönetin.</p>
+        </div>
+        <button onClick={() => handleOpenModal()} className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium shadow-sm transition-colors">
+          <Plus size={20} />
+          <span>Firma Ekle</span>
+        </button>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-3 text-slate-400" size={20} />
+        <input 
+          type="text" 
+          placeholder="Firma adı ile ara..." 
+          value={searchTerm} 
+          onChange={(e) => setSearchTerm(e.target.value)} 
+          className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {filteredVendors.map(vendor => {
+          const unpaidItems = getUnpaidExpensesByVendor(vendor.id);
+          const balance = unpaidItems.reduce((acc, curr) => acc + curr.amount, 0);
+          
+          return (
+            <div key={vendor.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+              <div className="p-6 flex-1">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="p-3 bg-slate-50 rounded-xl text-slate-600 transition-colors">
+                    <Building size={24} />
+                  </div>
+                  {balance > 0 && (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-full border border-orange-100 uppercase tracking-tighter">
+                      <AlertCircle size={12} /> {unpaidItems.length} Bekleyen Fatura
+                    </span>
+                  )}
+                </div>
+                
+                <h3 className="text-lg font-bold text-slate-900 truncate mb-1">{vendor.name}</h3>
+                <p className="text-xs text-slate-500 flex items-center gap-1 mb-4">
+                  <UserIcon size={12} /> {vendor.contactPerson || 'Yetkili belirtilmedi'}
+                </p>
+
+                <div className="space-y-2 mb-6">
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <Phone size={14} className="text-slate-400" />
+                    <span>{vendor.phone}</span>
+                  </div>
+                  {vendor.email && (
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Mail size={14} className="text-slate-400" />
+                      <span>{vendor.email}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Unpaid Items Detail Section */}
+                {unpaidItems.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 border-b border-slate-100 pb-1">Açık Hesap Kalemleri</p>
+                    <div className="max-h-32 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                      {unpaidItems.map(item => (
+                        <div key={item.id} className="flex justify-between items-center text-xs p-2 bg-slate-50 rounded border border-slate-100">
+                          <div className="flex flex-col gap-0.5 max-w-[70%]">
+                            <span className="font-bold text-slate-700 truncate" title={item.description}>{item.description}</span>
+                            <span className="text-[9px] text-slate-400 font-mono">{new Date(item.date).toLocaleDateString('tr-TR')}</span>
+                          </div>
+                          <span className="font-black text-orange-600 whitespace-nowrap">{formatCurrency(item.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between mt-auto">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Toplam Borç</p>
+                  <p className={`text-xl font-black ${balance > 0 ? 'text-orange-600' : 'text-slate-400'}`}>
+                    {formatCurrency(balance)}
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  <button 
+                    onClick={() => handleOpenModal(vendor)} 
+                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
+                    title="Firma Bilgilerini Düzenle"
+                  >
+                    <FileText size={20} />
+                  </button>
+                  {balance > 0 && (
+                    <button 
+                      onClick={() => window.location.hash = '/expenses'} 
+                      className="p-2 text-orange-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-100"
+                      title="Ödemeleri Yap"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? 'Firma Düzenle' : 'Yeni Firma Kaydı'}>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-700">Firma Adı</label>
+            <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Yetkili Kişi</label>
+              <input type="text" value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Telefon</label>
+              <input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-700">E-Posta</label>
+            <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Vergi No</label>
+              <input type="text" value={formData.taxNumber} onChange={e => setFormData({...formData, taxNumber: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Vergi Dairesi</label>
+              <input type="text" value={formData.taxOffice} onChange={e => setFormData({...formData, taxOffice: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+            </div>
+          </div>
+          <div className="pt-4 flex gap-3">
+            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium">İptal</button>
+            <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold">Kaydet</button>
+          </div>
+        </form>
+      </Modal>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default Vendors;

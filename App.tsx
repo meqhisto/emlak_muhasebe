@@ -6,26 +6,19 @@ import Consultants from './pages/Consultants';
 import Transactions from './pages/Transactions';
 import Expenses from './pages/Expenses';
 import PersonnelPage from './pages/Personnel';
+import Vendors from './pages/Vendors'; // Yeni sayfa eklendi
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import { User } from './types';
 
 const App: React.FC = () => {
-  // Auth State
   const [user, setUser] = useState<User | null>(null);
-  
-  // Navigation State
   const [currentPage, setCurrentPage] = useState('/');
 
-  // Check for stored session on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('emlak_user');
     if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        localStorage.removeItem('emlak_user');
-      }
+      try { setUser(JSON.parse(storedUser)); } catch (e) { localStorage.removeItem('emlak_user'); }
     }
   }, []);
 
@@ -43,38 +36,23 @@ const App: React.FC = () => {
 
   const renderPage = () => {
     if (!user) return <Login onLogin={handleLogin} />;
-
     switch (currentPage) {
-      case '/':
-        return <Dashboard user={user} />;
-      case '/consultants':
-        return <Consultants currentUser={user} />;
-      case '/personnel':
-        return <PersonnelPage currentUser={user} />;
-      case '/transactions':
-        return <Transactions currentUser={user} />;
-      case '/expenses':
-        return <Expenses currentUser={user} />;
-      case '/reports':
-        return <Reports />;
-      case '/settings':
-        return <Settings currentUser={user} />;
-      default:
-        return <Dashboard user={user} />;
+      case '/': return <Dashboard user={user} />;
+      case '/consultants': return <Consultants currentUser={user} />;
+      case '/vendors': return <Vendors currentUser={user} />; // Yeni route
+      case '/personnel': return <PersonnelPage currentUser={user} />;
+      case '/transactions': return <Transactions currentUser={user} />;
+      case '/expenses': return <Expenses currentUser={user} />;
+      case '/reports': return <Reports />;
+      case '/settings': return <Settings currentUser={user} />;
+      default: return <Dashboard user={user} />;
     }
   };
 
-  if (!user) {
-    return <Login onLogin={handleLogin} />;
-  }
+  if (!user) return <Login onLogin={handleLogin} />;
 
   return (
-    <Layout 
-      user={user} 
-      onLogout={handleLogout}
-      currentPage={currentPage}
-      onNavigate={setCurrentPage}
-    >
+    <Layout user={user} onLogout={handleLogout} currentPage={currentPage} onNavigate={setCurrentPage}>
       {renderPage()}
     </Layout>
   );
