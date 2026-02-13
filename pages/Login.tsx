@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { MOCK_USERS } from '../constants';
 import { User } from '../types';
@@ -21,7 +22,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     // Simulate network delay
     setTimeout(() => {
       // Simple mock authentication
-      // In real app, this would be an API call
       const user = MOCK_USERS.find(u => u.username === username);
       
       if (user && password === '1234') { // Mock password for everyone
@@ -65,7 +65,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-shadow outline-none"
+                  className="block w-full pl-10 pr-3 py-2.5 bg-white text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all outline-none"
                   placeholder="Kullanıcı adınızı girin"
                   required
                 />
@@ -82,7 +82,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-shadow outline-none"
+                  className="block w-full pl-10 pr-3 py-2.5 bg-white text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all outline-none"
                   placeholder="••••••••"
                   required
                 />

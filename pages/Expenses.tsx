@@ -15,8 +15,6 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
   
   // UI States
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   
   // Search & Filter State
@@ -192,7 +190,7 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
       <div className="flex gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 text-slate-400" size={20} />
-          <input type="text" placeholder="Giderlerde ara..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-rose-500 shadow-sm" />
+          <input type="text" placeholder="Giderlerde ara..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white text-slate-900 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-rose-500 shadow-sm" />
         </div>
         <button onClick={() => setShowFilters(!showFilters)} className={`px-4 py-2 border rounded-xl flex items-center gap-2 transition-colors ${showFilters ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-white border-slate-200 text-slate-600'}`}>
           <Filter size={20} />
@@ -251,7 +249,7 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
                 <select 
                     value={formData.paidBy} 
                     onChange={e => setFormData({...formData, paidBy: e.target.value as Payer})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-indigo-50/30 font-semibold text-slate-800"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-white text-slate-900 font-semibold"
                 >
                     <option value={Payer.OFFICE}>Ofis Kasası</option>
                     <option value={Payer.ALTAN}>Altan (Ortak)</option>
@@ -260,7 +258,7 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
             </div>
             <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700">Firma / Cari</label>
-                <select value={formData.vendorId} onChange={e => setFormData({...formData, vendorId: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-white">
+                <select value={formData.vendorId} onChange={e => setFormData({...formData, vendorId: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-white text-slate-900">
                 <option value="">Firma Seçilmedi</option>
                 {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                 </select>
@@ -269,19 +267,19 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">Açıklama</label>
-            <input required type="text" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500" placeholder="Örn: Ekim Ayı Elektrik Faturası" />
+            <input required type="text" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-rose-500" placeholder="Örn: Ekim Ayı Elektrik Faturası" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Kategori</label>
-              <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value as ExpenseCategory})} className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white">
+              <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value as ExpenseCategory})} className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900">
                 {Object.values(ExpenseCategory).map(cat => <option key={cat} value={cat}>{getCategoryLabel(cat)}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Tarih</label>
-              <input required type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+              <input required type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none" />
             </div>
           </div>
 
@@ -289,7 +287,7 @@ const Expenses: React.FC<ExpensesProps> = ({ currentUser }) => {
             <label className="text-sm font-medium text-slate-700">Tutar</label>
             <div className="relative">
                 <span className="absolute left-3 top-2.5 text-slate-400 font-bold">₺</span>
-                <input required type="number" min="0" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} className="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg outline-none font-bold text-lg text-rose-600" placeholder="0.00" />
+                <input required type="number" min="0" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} className="w-full pl-8 pr-3 py-2 bg-white text-rose-600 border border-slate-300 rounded-lg outline-none font-bold text-lg" placeholder="0.00" />
             </div>
           </div>
 

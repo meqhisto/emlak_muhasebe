@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Vendor, Expense, User, SystemLog, ExpenseCategory } from '../types';
 import { INITIAL_VENDORS } from '../constants';
@@ -56,10 +57,6 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
     return expenses.filter(e => e.vendorId === vendorId && !e.isPaid);
   };
 
-  const getVendorBalance = (vendorId: string) => {
-    return getUnpaidExpensesByVendor(vendorId).reduce((acc, curr) => acc + curr.amount, 0);
-  };
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
   };
@@ -110,7 +107,7 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
           placeholder="Firma adı ile ara..." 
           value={searchTerm} 
           onChange={(e) => setSearchTerm(e.target.value)} 
-          className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+          className="w-full pl-10 pr-4 py-3 bg-white text-slate-900 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
         />
       </div>
 
@@ -138,39 +135,20 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
                   <UserIcon size={12} /> {vendor.contactPerson || 'Yetkili belirtilmedi'}
                 </p>
 
-                <div className="space-y-2 mb-6">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                <div className="space-y-2 mb-6 text-sm text-slate-600">
+                  <div className="flex items-center gap-2">
                     <Phone size={14} className="text-slate-400" />
                     <span>{vendor.phone}</span>
                   </div>
                   {vendor.email && (
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <div className="flex items-center gap-2">
                       <Mail size={14} className="text-slate-400" />
                       <span>{vendor.email}</span>
                     </div>
                   )}
                 </div>
-
-                {/* Unpaid Items Detail Section */}
-                {unpaidItems.length > 0 && (
-                  <div className="mt-2 space-y-2">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 border-b border-slate-100 pb-1">Açık Hesap Kalemleri</p>
-                    <div className="max-h-32 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                      {unpaidItems.map(item => (
-                        <div key={item.id} className="flex justify-between items-center text-xs p-2 bg-slate-50 rounded border border-slate-100">
-                          <div className="flex flex-col gap-0.5 max-w-[70%]">
-                            <span className="font-bold text-slate-700 truncate" title={item.description}>{item.description}</span>
-                            <span className="text-[9px] text-slate-400 font-mono">{new Date(item.date).toLocaleDateString('tr-TR')}</span>
-                          </div>
-                          <span className="font-black text-orange-600 whitespace-nowrap">{formatCurrency(item.amount)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
-              {/* Footer */}
               <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between mt-auto">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase">Toplam Borç</p>
@@ -182,19 +160,9 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
                   <button 
                     onClick={() => handleOpenModal(vendor)} 
                     className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
-                    title="Firma Bilgilerini Düzenle"
                   >
                     <FileText size={20} />
                   </button>
-                  {balance > 0 && (
-                    <button 
-                      onClick={() => window.location.hash = '/expenses'} 
-                      className="p-2 text-orange-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-100"
-                      title="Ödemeleri Yap"
-                    >
-                      <ChevronRight size={20} />
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
@@ -206,30 +174,30 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">Firma Adı</label>
-            <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+            <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Yetkili Kişi</label>
-              <input type="text" value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+              <input type="text" value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Telefon</label>
-              <input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+              <input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">E-Posta</label>
-            <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+            <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Vergi No</label>
-              <input type="text" value={formData.taxNumber} onChange={e => setFormData({...formData, taxNumber: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+              <input type="text" value={formData.taxNumber} onChange={e => setFormData({...formData, taxNumber: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Vergi Dairesi</label>
-              <input type="text" value={formData.taxOffice} onChange={e => setFormData({...formData, taxOffice: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none" />
+              <input type="text" value={formData.taxOffice} onChange={e => setFormData({...formData, taxOffice: e.target.value})} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
           </div>
           <div className="pt-4 flex gap-3">
@@ -238,22 +206,6 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
           </div>
         </form>
       </Modal>
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f5f9;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
-        }
-      `}</style>
     </div>
   );
 };
