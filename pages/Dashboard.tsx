@@ -32,7 +32,11 @@ const Dashboard: React.FC = () => {
     const officeRev = transactions.reduce((acc, t) => acc + t.officeRevenue, 0);
 
     // Hakediş ödemelerini genel giderlerden ayırıyoruz (Net karı etkilememeli)
-    const operationalExpenses = expenses.filter(e => e.category !== ExpenseCategory.COMMISSION);
+    // Hem yeni HAKEDIS kategorisi hem de eski PERSONEL_MAAS ile kaydedilmiş hakediş kayıtlarını hariç tut
+    const isCommissionExpense = (e: Expense) =>
+      e.category === ExpenseCategory.COMMISSION ||
+      (e.category === ExpenseCategory.PERSONNEL && e.description.toLowerCase().includes('hakediş'));
+    const operationalExpenses = expenses.filter(e => !isCommissionExpense(e));
     const totalExp = operationalExpenses.reduce((acc, e) => acc + e.amount, 0);
 
     const totalUnpaid = operationalExpenses.filter(e => !e.isPaid).reduce((acc, e) => acc + e.amount, 0);
