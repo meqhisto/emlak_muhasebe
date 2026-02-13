@@ -26,10 +26,37 @@ const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
   };
 
   const handlePrint = () => {
-    // Eski yöntem: window.print();
-    // Yeni yöntem: Ayrı bir pencerede yazdırılabilir sayfayı aç
-    const printUrl = `/?print=true&id=${transaction.id}`;
-    window.open(printUrl, '_blank', 'width=900,height=800');
+    const content = document.getElementById('hakedis-modal-content');
+    if (!content) return;
+
+    const printWindow = window.open('', '_blank', 'width=900,height=800');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Hakediş Belgesi - ${consultant.fullName}</title>
+        <link rel="stylesheet" href="/assets/index.css" />
+        <style>
+          body { margin: 0; padding: 0; background: white; }
+          .no-print { display: none !important; }
+          @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          }
+        </style>
+      </head>
+      <body>
+        ${content.innerHTML}
+        <script>
+          window.onload = function() {
+            setTimeout(function() { window.print(); }, 300);
+          };
+        <\/script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const isPaid = transaction.paymentStatus === PaymentStatus.PAID;
