@@ -9,9 +9,5 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 root.render(
-  // <App />
-  <div style={{ padding: 20, textAlign: 'center' }}>
-    <h1>React Çalışıyor</h1>
-    <p>Bu ekran görünüyorsa React kütüphanesi sağlamdır.</p>
-  </div>
+  <App />
 );
