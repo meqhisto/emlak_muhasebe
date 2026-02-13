@@ -118,7 +118,7 @@ const Transactions: React.FC = () => {
     if (consultant) {
       const newExpense: Expense = {
         id: `auto-exp-${Date.now()}`,
-        category: ExpenseCategory.PERSONNEL, // Prim/Hakediş ödemesi
+        category: ExpenseCategory.COMMISSION, // Prim/Hakediş ödemesi
         amount: transaction.consultantShare,
         date: new Date().toISOString().split('T')[0],
         description: `Hakediş Ödemesi: ${transaction.propertyName} - ${consultant.fullName}`,

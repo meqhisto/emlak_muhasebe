@@ -45,6 +45,7 @@ const Expenses: React.FC = () => {
       [ExpenseCategory.UTILITIES]: 'Faturalar',
       [ExpenseCategory.FOOD]: 'Yemek/Temsil',
       [ExpenseCategory.PERSONNEL]: 'Personel Maaş',
+      [ExpenseCategory.COMMISSION]: 'Danışman Hakediş',
       [ExpenseCategory.OTHER]: 'Diğer',
     };
     return labels[cat] || cat;

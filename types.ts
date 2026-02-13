@@ -80,6 +80,7 @@ export enum ExpenseCategory {
   PERSONNEL = 'PERSONEL_MAAS',
   UTILITIES = 'FATURALAR',
   FOOD = 'YEMEK',
+  COMMISSION = 'HAKEDIS', // Danışman Hakediş Ödemeleri
   OTHER = 'DIGER',
 }
 

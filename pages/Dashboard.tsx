@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { User, Consultant, Transaction, Expense } from '../types';
+import { User, Consultant, Transaction, Expense, ExpenseCategory } from '../types';
 import { INITIAL_CONSULTANTS, INITIAL_TRANSACTIONS, INITIAL_EXPENSES } from '../constants';
 import { ShieldCheck, Users, Banknote, CheckCircle2, TrendingUp, Building2, Receipt, Target, AlertTriangle } from 'lucide-react';
 
@@ -30,8 +30,12 @@ const Dashboard: React.FC = () => {
 
     const totalRev = transactions.reduce((acc, t) => acc + t.totalRevenue, 0);
     const officeRev = transactions.reduce((acc, t) => acc + t.officeRevenue, 0);
-    const totalExp = expenses.reduce((acc, e) => acc + e.amount, 0);
-    const totalUnpaid = expenses.filter(e => !e.isPaid).reduce((acc, e) => acc + e.amount, 0);
+
+    // Hakediş ödemelerini genel giderlerden ayırıyoruz (Net karı etkilememeli)
+    const operationalExpenses = expenses.filter(e => e.category !== ExpenseCategory.COMMISSION);
+    const totalExp = operationalExpenses.reduce((acc, e) => acc + e.amount, 0);
+
+    const totalUnpaid = operationalExpenses.filter(e => !e.isPaid).reduce((acc, e) => acc + e.amount, 0);
 
     return {
       activeConsultants: consultants.filter(c => c.isActive).length,
