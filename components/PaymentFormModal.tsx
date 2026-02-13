@@ -147,7 +147,10 @@ const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                     <tr>
                       <td className="px-4 py-5">
                         <p className="font-bold text-slate-900">{transaction.propertyName}</p>
-                        <p className="text-xs text-slate-500 mt-1">Müşteri: {transaction.customerName}</p>
+                        <div className="flex flex-col gap-0.5 mt-1">
+                          <p className="text-xs text-slate-500">Müşteri: {transaction.customerName} ({transaction.customerPhone})</p>
+                          <p className="text-[10px] text-indigo-500 font-bold uppercase">{transaction.propertyType}</p>
+                        </div>
                       </td>
                       <td className="px-4 py-5">
                         <span className="inline-block px-2 py-1 bg-slate-100 rounded text-[10px] font-bold uppercase text-slate-700">

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 // import { useSystemLog } from '../hooks/useSystemLog';
-import { Transaction, TransactionType, Consultant, PaymentStatus, User, SystemLog, Expense, ExpenseCategory, Payer } from '../types';
+import { Transaction, TransactionType, PropertyType, Consultant, PaymentStatus, User, SystemLog, Expense, ExpenseCategory, Payer } from '../types';
 import { INITIAL_TRANSACTIONS, INITIAL_CONSULTANTS } from '../constants';
 import Modal from '../components/Modal';
 import PaymentFormModal from '../components/PaymentFormModal';
@@ -28,10 +28,13 @@ const Transactions: React.FC = () => {
   const [formData, setFormData] = useState({
     propertyName: '',
     type: TransactionType.SALE,
+    propertyType: PropertyType.APARTMENT,
     customerName: '',
+    customerPhone: '',
     consultantId: '',
     date: new Date().toISOString().split('T')[0],
     totalRevenue: '',
+    description: '',
   });
 
   // State logic replaced by DataContext
@@ -50,11 +53,12 @@ const Transactions: React.FC = () => {
     const consultantShare = revenue * (c.commissionRate / 100);
     const officeRevenue = revenue - consultantShare;
 
-    const newTransaction: Transaction = {
-      id: Date.now().toString(),
+    const newTransaction: any = {
       propertyName: formData.propertyName,
       type: formData.type,
+      propertyType: formData.propertyType,
       customerName: formData.customerName,
+      customerPhone: formData.customerPhone,
       consultantId: formData.consultantId,
       date: formData.date,
       totalRevenue: revenue,
@@ -63,6 +67,7 @@ const Transactions: React.FC = () => {
       partnerShareAltan: officeRevenue / 2,
       partnerShareSuat: officeRevenue / 2,
       paymentStatus: PaymentStatus.PENDING,
+      description: formData.description,
     };
 
     addTransaction(newTransaction);
@@ -72,10 +77,13 @@ const Transactions: React.FC = () => {
     setFormData({
       propertyName: '',
       type: TransactionType.SALE,
+      propertyType: PropertyType.APARTMENT,
       customerName: '',
+      customerPhone: '',
       consultantId: '',
       date: new Date().toISOString().split('T')[0],
       totalRevenue: '',
+      description: '',
     });
   };
 
@@ -260,17 +268,32 @@ const Transactions: React.FC = () => {
             <input required placeholder="Örn: Vadi İstanbul 3+1 Daire" type="text" value={formData.propertyName} onChange={e => setFormData({ ...formData, propertyName: e.target.value })} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Müşteri Adı Soyadı</label>
-            <input required placeholder="Müşteri Adı" type="text" value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Müşteri Adı Soyadı</label>
+              <input required placeholder="Müşteri Adı" type="text" value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Müşteri Telefon</label>
+              <input required placeholder="05xx xxx xx xx" type="text" value={formData.customerPhone} onChange={e => setFormData({ ...formData, customerPhone: e.target.value })} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">İşlem Türü</label>
               <select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as TransactionType })} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none">
                 <option value={TransactionType.SALE}>Satış</option>
                 <option value={TransactionType.RENT}>Kiralama</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Mülk Tipi</label>
+              <select value={formData.propertyType} onChange={e => setFormData({ ...formData, propertyType: e.target.value as PropertyType })} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none">
+                <option value={PropertyType.APARTMENT}>Daire</option>
+                <option value={PropertyType.VILLA}>Villa</option>
+                <option value={PropertyType.LAND}>Arsa</option>
+                <option value={PropertyType.COMMERCIAL}>Ticari</option>
               </select>
             </div>
             <div className="space-y-1.5">
@@ -294,6 +317,11 @@ const Transactions: React.FC = () => {
               <input required type="number" min="0" value={formData.totalRevenue} onChange={e => setFormData({ ...formData, totalRevenue: e.target.value })} className="w-full pl-8 pr-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none text-lg font-bold" placeholder="0.00" />
             </div>
             <p className="text-[10px] text-slate-500 pt-1">Bu tutar üzerinden danışman hakedişi ve ofis payı otomatik hesaplanacaktır.</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-700">Açıklama / Notlar</label>
+            <textarea placeholder="Ekstra bilgiler..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full px-3 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" rows={2} />
           </div>
 
           <div className="pt-2">

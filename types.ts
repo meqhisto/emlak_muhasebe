@@ -42,6 +42,13 @@ export enum TransactionType {
   RENT = 'KIRALAMA',
 }
 
+export enum PropertyType {
+  APARTMENT = 'DAIRE',
+  VILLA = 'VILLA',
+  LAND = 'ARSA',
+  COMMERCIAL = 'TICARI',
+}
+
 export enum PaymentStatus {
   PENDING = 'BEKLIYOR',
   PAID = 'ODENDI',
@@ -51,7 +58,9 @@ export interface Transaction {
   id: string;
   propertyName: string;
   type: TransactionType;
+  propertyType: PropertyType;
   customerName: string;
+  customerPhone: string;
   consultantId: string;
   date: string;
   totalRevenue: number;
@@ -60,6 +69,7 @@ export interface Transaction {
   partnerShareAltan: number;
   partnerShareSuat: number;
   paymentStatus: PaymentStatus;
+  description?: string;
 }
 
 // --- GİDER ŞEMASI ---
