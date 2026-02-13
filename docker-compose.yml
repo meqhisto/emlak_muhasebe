@@ -14,6 +14,8 @@ services:
       - PORT=3001
       # Add other env vars here or use an env_file
     restart: always
+    networks:
+      - internal
 
   frontend:
     build: .
@@ -23,3 +25,13 @@ services:
     restart: always
     depends_on:
       - backend
+    networks:
+      - internal
+      - npm_network
+
+networks:
+  internal:
+    driver: bridge
+  npm_network:
+    external: true
+    name: root_default
