@@ -18,7 +18,8 @@ import PrintTransaction from './pages/PrintTransaction'; // Yeni print sayfası
 function AppContent() {
   const { currentUser, isAuthenticated, login, logout, loading } = useAuth();
   const location = useLocation();
-  const [currentPage, setCurrentPage] = useState('/'); // Keep for print mode logic
+
+  console.log("AppContent Render", { isAuthenticated, loading, path: location.pathname });
 
   if (loading) {
     return (
@@ -27,34 +28,6 @@ function AppContent() {
       </div>
     );
   }
-
-  useEffect(() => {
-    // Check for print mode in URL
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('print') === 'true') {
-      setCurrentPage('print-transaction');
-      return;
-    }
-    // If not in print mode, update currentPage based on router location
-    setCurrentPage(location.pathname);
-  }, [location.pathname]);
-
-  // const handleLogin = (newUser: User) => { // This is now handled by AuthContext's login function
-  //   setUser(newUser);
-  //   localStorage.setItem('emlak_user', JSON.stringify(newUser));
-  //   setCurrentPage('/');
-  // };
-
-  // const handleLogout = () => { // This is now handled by AuthContext's logout function
-  //   setUser(null);
-  //   localStorage.removeItem('emlak_user');
-  //   setCurrentPage('/');
-  // };
-
-  // Print page doesn't need auth or layout
-  // if (currentPage === 'print-transaction') { // This logic will now be handled by a route
-  //   return <PrintTransaction />;
-  // }
 
   if (!isAuthenticated) {
     return <Login />;
@@ -71,8 +44,8 @@ function AppContent() {
         <Route path="/expenses" element={<Expenses />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/print-transaction" element={<PrintTransaction />} /> {/* Add route for print page */}
-        <Route path="*" element={<Navigate to="/" replace />} /> {/* Redirect any unknown routes to dashboard */}
+        <Route path="/print-transaction" element={<PrintTransaction />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
   );
@@ -82,9 +55,9 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <DataProvider>
-          <AppContent />
-        </DataProvider>
+        {/* <DataProvider> */}
+        <AppContent />
+        {/* </DataProvider> */}
       </AuthProvider>
     </Router>
   );
