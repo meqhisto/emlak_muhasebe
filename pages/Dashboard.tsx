@@ -9,6 +9,7 @@ import { useData } from '../contexts/DataContext';
 const Dashboard: React.FC = () => {
   const { currentUser: user } = useAuth();
   const { consultants, transactions, expenses } = useData();
+  const isPartner = user?.role === 'ORTAK' || user?.role === 'ADMIN';
   const [activeConsultantCount, setActiveConsultantCount] = useState<number>(0);
   const [totalRevenue, setTotalRevenue] = useState<number>(0);
   const [officeRevenue, setOfficeRevenue] = useState<number>(0);
@@ -107,25 +108,50 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden text-white">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Building2 size={64} className="text-white" />
+        {isPartner && (
+          <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden text-white">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Building2 size={64} className="text-white" />
+            </div>
+            <p className="text-sm font-medium text-slate-400">Ofis Geliri (Brüt)</p>
+            <p className="text-3xl font-bold text-white mt-1">{formatCurrency(officeRevenue)}</p>
+            <div className="mt-4 flex items-center gap-1 text-xs font-bold text-indigo-400 uppercase">
+              Pay: %{Math.round((stats.officeRevenue / (stats.totalRevenue || 1)) * 100)}
+            </div>
           </div>
-          <p className="text-sm font-medium text-slate-400">Ofis Geliri (Brüt)</p>
-          <p className="text-3xl font-bold text-white mt-1">{formatCurrency(officeRevenue)}</p>
-          <div className="mt-4 flex items-center gap-1 text-xs font-bold text-indigo-400 uppercase">
-            Pay: %{Math.round((stats.officeRevenue / (stats.totalRevenue || 1)) * 100)}
-          </div>
-        </div>
+        )}
 
-        <div className="bg-emerald-600 p-6 rounded-2xl shadow-lg shadow-emerald-900/10 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-20">
-            <CheckCircle2 size={64} className="text-white" />
+        {isPartner ? (
+          <div className="bg-emerald-600 p-6 rounded-2xl shadow-lg shadow-emerald-900/10 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-20">
+              <CheckCircle2 size={64} className="text-white" />
+            </div>
+            <p className="text-sm font-medium text-emerald-100">Net Kâr</p>
+            <p className="text-3xl font-bold text-white mt-1">{formatCurrency(stats.netProfit)}</p>
+            <p className="text-xs text-emerald-100 mt-4 italic">Giderler sonrası kalan tutar</p>
           </div>
-          <p className="text-sm font-medium text-emerald-100">Net Kâr</p>
-          <p className="text-3xl font-bold text-white mt-1">{formatCurrency(stats.netProfit)}</p>
-          <p className="text-xs text-emerald-100 mt-4 italic">Giderler sonrası kalan tutar</p>
-        </div>
+        ) : (
+          <>
+            <div className="bg-indigo-600 p-6 rounded-2xl shadow-lg shadow-indigo-900/10 text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-20">
+                <Building2 size={64} className="text-white" />
+              </div>
+              <p className="text-sm font-medium text-indigo-100">Toplam İşlem</p>
+              <p className="text-3xl font-bold text-white mt-1">{transactions?.length || 0}</p>
+              <p className="text-xs text-indigo-100 mt-4 italic">Kayıtlı işlem sayısı</p>
+            </div>
+            <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden text-white">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Users size={64} className="text-white" />
+              </div>
+              <p className="text-sm font-medium text-slate-400">Aktif Kadro</p>
+              <p className="text-3xl font-bold text-white mt-1">{stats.activeConsultants} Danışman</p>
+              <div className="mt-4 flex items-center gap-1 text-xs font-bold text-indigo-400 uppercase">
+                Ekip Aktif
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Goal Tracker */}
@@ -178,39 +204,40 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Secondary Info Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
-              <Receipt size={24} />
+      {isPartner && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
+                <Receipt size={24} />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-800">Toplam Giderler</h4>
+                <p className="text-2xl font-bold text-rose-600">{formatCurrency(stats.totalExpenses)}</p>
+              </div>
             </div>
-            <div>
-              <h4 className="font-bold text-slate-800">Toplam Giderler</h4>
-              <p className="text-2xl font-bold text-rose-600">{formatCurrency(stats.totalExpenses)}</p>
+            <div className="text-right">
+              <p className="text-[10px] text-slate-400 uppercase font-bold">Gider Oranı</p>
+              <p className="text-sm font-bold text-slate-600">%{Math.round((stats.totalExpenses / (stats.officeRevenue || 1)) * 100)}</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] text-slate-400 uppercase font-bold">Gider Oranı</p>
-            <p className="text-sm font-bold text-slate-600">%{Math.round((stats.totalExpenses / (stats.officeRevenue || 1)) * 100)}</p>
-          </div>
-        </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-              <Users size={24} />
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                <Users size={24} />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-800">Aktif Kadro</h4>
+                <p className="text-2xl font-bold text-slate-900">{stats.activeConsultants} Danışman</p>
+              </div>
             </div>
-            <div>
-              <h4 className="font-bold text-slate-800">Aktif Kadro</h4>
-              <p className="text-2xl font-bold text-slate-900">{stats.activeConsultants} Danışman</p>
+            <div className="bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+              <span className="text-xs font-bold text-indigo-600">Ekip Aktif</span>
             </div>
-          </div>
-          <div className="bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
-            <span className="text-xs font-bold text-indigo-600">Ekip Aktif</span>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
