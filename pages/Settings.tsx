@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2, Download, Save, RefreshCw, Database, Info, ShieldAlert, History, Lock, FileText } from 'lucide-react';
 import { APP_NAME } from '../constants';
@@ -17,7 +18,6 @@ const Settings: React.FC<SettingsProps> = ({ currentUser }) => {
       if (storedLogs) {
         const parsedLogs = JSON.parse(storedLogs);
         if (Array.isArray(parsedLogs)) {
-          // Newest first
           const sorted = parsedLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
           setLogs(sorted);
         } else {
@@ -39,15 +39,17 @@ const Settings: React.FC<SettingsProps> = ({ currentUser }) => {
   }, [activeTab, loadLogs]);
   
   const handleResetData = () => {
-    if (window.confirm('DİKKAT: Tüm veriler silinecek ve uygulama varsayılan (demo) ayarlara dönecektir. Bu işlem geri alınamaz. Emin misiniz?')) {
+    if (window.confirm('DİKKAT: Tüm veriler VE KULLANICI HESAPLARI silinecektir. Sistemden çıkış yapılacaktır. Emin misiniz?')) {
       localStorage.removeItem('emlak_consultants');
       localStorage.removeItem('emlak_transactions');
       localStorage.removeItem('emlak_expenses');
       localStorage.removeItem('emlak_personnel');
       localStorage.removeItem('emlak_salary_payments');
       localStorage.removeItem('emlak_logs');
+      localStorage.removeItem('emlak_auth_users'); // Kullanıcıları da siliyoruz
+      localStorage.removeItem('emlak_user'); // Mevcut oturumu kapatıyoruz
       
-      alert('Veriler başarıyla sıfırlandı. Sayfa yenileniyor...');
+      alert('Tüm veriler temizlendi. Uygulama yeniden başlatılıyor...');
       window.location.reload();
     }
   };
@@ -68,7 +70,7 @@ const Settings: React.FC<SettingsProps> = ({ currentUser }) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `emlak-ofisi-yedek-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `emlak-yedek-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -87,7 +89,6 @@ const Settings: React.FC<SettingsProps> = ({ currentUser }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h1 className="text-2xl font-bold text-slate-900">Ayarlar</h1>
@@ -127,11 +128,11 @@ const Settings: React.FC<SettingsProps> = ({ currentUser }) => {
                 <div className="flex-1">
                     <h4 className="font-medium text-slate-900">Veri Yedekleme</h4>
                     <p className="text-sm text-slate-500 mb-3">
-                    Tüm veritabanını (danışmanlar, işlemler, giderler, personel) JSON formatında bilgisayarınıza indirin.
+                    Tüm verileri (danışmanlar, işlemler, giderler) JSON formatında yedekleyin.
                     </p>
                     <button 
                     onClick={handleExportData}
-                    className="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 hover:text-blue-600 transition-colors text-sm flex items-center gap-2"
+                    className="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 hover:text-blue-600 transition-colors text-sm flex items-center gap-2 shadow-sm"
                     >
                     <Save size={16} />
                     Yedeği İndir
@@ -146,16 +147,16 @@ const Settings: React.FC<SettingsProps> = ({ currentUser }) => {
                     <Trash2 size={24} />
                 </div>
                 <div className="flex-1">
-                    <h4 className="font-medium text-slate-900">Fabrika Ayarlarına Dön</h4>
+                    <h4 className="font-medium text-slate-900">Sistemi Sıfırla</h4>
                     <p className="text-sm text-slate-500 mb-3">
-                    Tüm kayıtlı verileri siler ve uygulamayı ilk yüklenen demo verilerine döndürür. Bu işlem geri alınamaz.
+                    Tüm kayıtlı verileri ve kullanıcı hesaplarını siler.
                     </p>
                     <button 
                     onClick={handleResetData}
-                    className="px-4 py-2 bg-red-50 border border-red-100 text-red-700 font-medium rounded-lg hover:bg-red-100 transition-colors text-sm flex items-center gap-2"
+                    className="px-4 py-2 bg-red-50 border border-red-100 text-red-700 font-medium rounded-lg hover:bg-red-100 transition-colors text-sm flex items-center gap-2 shadow-sm"
                     >
                     <RefreshCw size={16} />
-                    Verileri Sıfırla
+                    Fabrika Ayarlarına Dön
                     </button>
                 </div>
                 </div>
@@ -165,26 +166,22 @@ const Settings: React.FC<SettingsProps> = ({ currentUser }) => {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-fit">
             <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
                 <Info size={20} className="text-slate-600" />
-                <h3 className="font-semibold text-slate-800">Uygulama Hakkında</h3>
+                <h3 className="font-semibold text-slate-800">Sistem Bilgisi</h3>
             </div>
             <div className="p-6 space-y-4">
                 <div className="flex justify-between py-2 border-b border-slate-50">
-                    <span className="text-slate-500 text-sm">Uygulama Adı</span>
+                    <span className="text-slate-500 text-sm">Uygulama</span>
                     <span className="font-medium text-slate-900">{APP_NAME}</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-slate-50">
                     <span className="text-slate-500 text-sm">Sürüm</span>
-                    <span className="font-mono text-sm font-bold text-slate-700">v1.0.0 (Faz 7 Release)</span>
+                    <span className="font-mono text-sm font-bold text-slate-700">v1.0.1 (Production)</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-slate-50">
-                    <span className="text-slate-500 text-sm">Durum</span>
+                    <span className="text-slate-500 text-sm">Veri Saklama</span>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
-                        Canlı (Production)
+                        Local Browser Storage
                     </span>
-                </div>
-                <div className="mt-4 p-4 bg-slate-50 rounded-lg text-xs text-slate-500 leading-relaxed">
-                <p className="font-bold text-slate-700 mb-1">Geliştirici Notu:</p>
-                Bu uygulama, emlak ofisi muhasebe süreçlerini dijitalleştirmek amacıyla geliştirilmiştir. Veriler tarayıcınızın yerel hafızasında (LocalStorage) saklanmaktadır.
                 </div>
             </div>
             </div>
@@ -196,66 +193,34 @@ const Settings: React.FC<SettingsProps> = ({ currentUser }) => {
             <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <History size={20} className="text-rose-600" />
-                    <h3 className="font-semibold text-slate-800">İşlem Kütüğü (Audit Logs)</h3>
+                    <h3 className="font-semibold text-slate-800">Audit Logs</h3>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button 
-                      onClick={loadLogs}
-                      className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-all"
-                      title="Logları Yenile"
-                    >
-                      <RefreshCw size={16} />
-                    </button>
-                    <div className="flex items-center gap-2 text-xs text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">
-                        <Lock size={12} />
-                        Salt Okunur
-                    </div>
-                </div>
+                <button onClick={loadLogs} className="p-1.5 text-slate-500 hover:text-indigo-600 transition-all"><RefreshCw size={16} /></button>
             </div>
             
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                     <thead>
                         <tr className="bg-slate-50/50 border-b border-slate-200">
-                            <th className="px-6 py-3 font-semibold text-slate-700 w-32">Tarih</th>
-                            <th className="px-6 py-3 font-semibold text-slate-700 w-32">Kullanıcı</th>
-                            <th className="px-6 py-3 font-semibold text-slate-700 w-24">Eylem</th>
-                            <th className="px-6 py-3 font-semibold text-slate-700 w-24">Modül</th>
-                            <th className="px-6 py-3 font-semibold text-slate-700">Açıklama</th>
+                            <th className="px-6 py-3 font-semibold text-slate-700 whitespace-nowrap">Tarih</th>
+                            <th className="px-6 py-3 font-semibold text-slate-700 whitespace-nowrap">Kullanıcı</th>
+                            <th className="px-6 py-3 font-semibold text-slate-700 whitespace-nowrap">Eylem</th>
+                            <th className="px-6 py-3 font-semibold text-slate-700 whitespace-nowrap">Açıklama</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {logs.length > 0 ? (
                             logs.map(log => (
                                 <tr key={log.id} className="hover:bg-slate-50/50">
-                                    <td className="px-6 py-3 text-slate-500 text-xs font-mono whitespace-nowrap">
-                                        {new Date(log.date).toLocaleString('tr-TR')}
-                                    </td>
-                                    <td className="px-6 py-3 font-medium text-slate-900">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">
-                                                {log.user.charAt(0).toUpperCase()}
-                                            </div>
-                                            {log.user}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-3">
-                                        {getActionBadge(log.action)}
-                                    </td>
-                                    <td className="px-6 py-3 text-xs font-medium text-slate-500 uppercase">
-                                        {log.module}
-                                    </td>
-                                    <td className="px-6 py-3 text-slate-600">
-                                        {log.description}
-                                    </td>
+                                    <td className="px-6 py-3 text-slate-500 text-xs font-mono">{new Date(log.date).toLocaleString('tr-TR')}</td>
+                                    <td className="px-6 py-3 font-medium text-slate-900">{log.user}</td>
+                                    <td className="px-6 py-3">{getActionBadge(log.action)}</td>
+                                    <td className="px-6 py-3 text-slate-600">{log.description}</td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                                    <FileText size={48} className="mx-auto text-slate-200 mb-2" />
-                                    <p>Henüz kayıtlı bir sistem logu bulunmamaktadır.</p>
-                                </td>
+                                <td colSpan={4} className="px-6 py-12 text-center text-slate-500 italic">Kayıt bulunamadı.</td>
                             </tr>
                         )}
                     </tbody>

@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Vendor, Expense, User, SystemLog, ExpenseCategory } from '../types';
 import { INITIAL_VENDORS } from '../constants';
 import Modal from '../components/Modal';
-import { Building, Plus, Search, Phone, Mail, FileText, Wallet, ArrowRight, User as UserIcon, AlertCircle, Calendar, Receipt, ChevronRight } from 'lucide-react';
+import { Building, Plus, Search, Phone, Mail, FileText, User as UserIcon, AlertCircle, Calendar, Receipt, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface VendorsProps {
   currentUser: User;
@@ -16,6 +16,7 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedVendorId, setExpandedVendorId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<Partial<Vendor>>({
     name: '',
@@ -85,6 +86,10 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
     setIsModalOpen(false);
   };
 
+  const toggleExpand = (vendorId: string) => {
+    setExpandedVendorId(expandedVendorId === vendorId ? null : vendorId);
+  };
+
   const filteredVendors = vendors.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
@@ -111,16 +116,17 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
         {filteredVendors.map(vendor => {
           const unpaidItems = getUnpaidExpensesByVendor(vendor.id);
           const balance = unpaidItems.reduce((acc, curr) => acc + curr.amount, 0);
+          const isExpanded = expandedVendorId === vendor.id;
           
           return (
-            <div key={vendor.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
-              <div className="p-6 flex-1">
+            <div key={vendor.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col">
+              <div className="p-6 pb-4">
                 <div className="flex justify-between items-start mb-4">
-                  <div className="p-3 bg-slate-50 rounded-xl text-slate-600 transition-colors">
+                  <div className="p-3 bg-slate-50 rounded-xl text-slate-600">
                     <Building size={24} />
                   </div>
                   {balance > 0 && (
@@ -135,7 +141,7 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
                   <UserIcon size={12} /> {vendor.contactPerson || 'Yetkili belirtilmedi'}
                 </p>
 
-                <div className="space-y-2 mb-6 text-sm text-slate-600">
+                <div className="space-y-2 text-sm text-slate-600">
                   <div className="flex items-center gap-2">
                     <Phone size={14} className="text-slate-400" />
                     <span>{vendor.phone}</span>
@@ -149,9 +155,47 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
                 </div>
               </div>
 
+              {/* Açık Hesap Detayları Bölümü */}
+              {balance > 0 && (
+                <div className="px-6 py-2">
+                   <button 
+                    onClick={() => toggleExpand(vendor.id)}
+                    className="w-full flex items-center justify-between py-2 px-3 bg-slate-50 hover:bg-slate-100 rounded-lg text-xs font-bold text-slate-600 transition-colors"
+                   >
+                     <span className="flex items-center gap-2"><Receipt size={14} className="text-orange-500" /> AÇIK HESAP DETAYI</span>
+                     {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                   </button>
+                   
+                   {isExpanded && (
+                     <div className="mt-2 space-y-2 animate-in slide-in-from-top-2 duration-200 overflow-hidden">
+                        <div className="bg-slate-50/50 rounded-lg border border-slate-100 overflow-hidden">
+                          <table className="w-full text-[11px] text-left">
+                            <thead className="bg-slate-100/50 text-slate-400 uppercase font-black">
+                              <tr>
+                                <th className="px-3 py-2">Tarih</th>
+                                <th className="px-3 py-2">Açıklama</th>
+                                <th className="px-3 py-2 text-right">Tutar</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {unpaidItems.map(item => (
+                                <tr key={item.id} className="text-slate-600">
+                                  <td className="px-3 py-2 whitespace-nowrap">{new Date(item.date).toLocaleDateString('tr-TR')}</td>
+                                  <td className="px-3 py-2 truncate max-w-[120px]">{item.description}</td>
+                                  <td className="px-3 py-2 text-right font-bold text-slate-900">{formatCurrency(item.amount)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                     </div>
+                   )}
+                </div>
+              )}
+
               <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between mt-auto">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Toplam Borç</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Toplam Bakiye</p>
                   <p className={`text-xl font-black ${balance > 0 ? 'text-orange-600' : 'text-slate-400'}`}>
                     {formatCurrency(balance)}
                   </p>
@@ -160,6 +204,7 @@ const Vendors: React.FC<VendorsProps> = ({ currentUser }) => {
                   <button 
                     onClick={() => handleOpenModal(vendor)} 
                     className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
+                    title="Firma Bilgilerini Düzenle"
                   >
                     <FileText size={20} />
                   </button>
