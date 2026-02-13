@@ -101,9 +101,28 @@ Docker, mevcut klasörde dosya bulamazsa üst klasörlere bakar (`/root/docker-c
 **Eğer yukarıdakilerden biri EKSİKSE:**
 Dosyaları sunucuya göndermemişsiniz. Lütfen **Sunucuya Dosya Aktarımı** başlığındaki adımları uygulayın.
 
-## ⚠️ Dikkat Edilmesi Gerekenler
+### "error: The following untracked working tree files would be overwritten by merge"
+Eğer `git pull` yaparken "package-lock.json" gibi dosyalarla ilgili hata alırsanız, sunucudaki yerel dosyaları ezmek ve GitHub'daki versiyonu almak için şu komutu çalıştırın:
 
-1. **Port Çakışması:** Eğer 3000 veya 3001 portları doluysa `docker-compose.yml` dosyasından portları değiştirebilirsiniz.
-2. **Environment Variables:** Backend için `.env` değişkenleri `docker-compose.yml` içinde tanımlanmıştır.
-3. **Permission Denied Hatası:** Eğer Linux'ta `permission denied` alırsanız komutların başına `sudo` ekleyin veya kullanıcınızı docker grubuna ekleyin: `sudo usermod -aG docker $USER`.
+```bash
+git fetch --all
+git reset --hard origin/main
+```
+
+Bu komut, sunucudaki tüm değişiklikleri siler ve GitHub'daki son hali ile değiştirir.
+
+## 📊 Sunucu Bilgilerini Öğrenme
+
+Sunucunuzun IP adresi, disk durumu ve Docker servislerinin çalışıp çalışmadığını tek komutla öğrenmek için hazırladığım scripti kullanabilirsiniz:
+
+```bash
+# Scripti çalıştırılabilir yapın (ilk sefer için)
+chmod +x server_check.sh
+
+# Çalıştırın
+./server_check.sh
+```
+
+Bu komut size sunucu IP adresinizi, disk doluluk oranını ve çalışan servisleri renkli bir rapor olarak sunacaktır.
+
 
