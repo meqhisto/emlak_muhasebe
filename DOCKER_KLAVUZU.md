@@ -88,16 +88,18 @@ Klasik yöntem (SCP) ile dosyaları sunucuya kopyalamak için:
 Eğer `docker compose up` komutunu çalıştırdığınızda `nextcloud` gibi alakasız bir servis görüyorsanız, **yanlış klasördesiniz** veya bu klasörde `docker-compose.yml` dosyası yok.
 Docker, mevcut klasörde dosya bulamazsa üst klasörlere bakar (`/root/docker-compose.yml` gibi).
 
-**Çözüm:**
-1. Proje klasörüne girdiğinizden emin olun:
-   ```bash
-   cd ~/emlak_muhasebe
-   ```
-2. Klasörde dosyanın olup olmadığını kontrol edin:
-   ```bash
-   ls -la
-   ```
-   Listede `docker-compose.yml` görmelisiniz. Görmüyorsanız dosya transferini yapmamışsınız demektir.
+**Adım Adım Kontrol:**
+
+1. **Klasöre Girin:** `cd ~/emlak_muhasebe`
+2. **Dosyaları Listeyelin:** `ls -la`
+3. **Şunları KONTROL EDİN:**
+   - [ ] `docker-compose.yml` dosyası var mı? (Sizde YOKDU)
+   - [ ] `Dockerfile` dosyası DOLU mu? (Sizde 0 byte görünüyor, hata!)
+   - [ ] `backend` klasörü var mı? (Sizde YOKDU)
+   - [ ] `nginx.conf` dosyası var mı?
+   
+**Eğer yukarıdakilerden biri EKSİKSE:**
+Dosyaları sunucuya göndermemişsiniz. Lütfen **Sunucuya Dosya Aktarımı** başlığındaki adımları uygulayın.
 
 ## ⚠️ Dikkat Edilmesi Gerekenler
 
