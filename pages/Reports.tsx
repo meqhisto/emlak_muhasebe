@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Transaction, Expense, Consultant, UserRole, TransactionType, Payer, ExpenseCategory } from '../types';
 import { INITIAL_TRANSACTIONS, INITIAL_EXPENSES, INITIAL_CONSULTANTS, APP_NAME } from '../constants';
-import { BarChart3, TrendingUp, TrendingDown, AlertTriangle, Wallet, Calendar, Printer, FileText, Activity } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, AlertTriangle, Wallet, Calendar, Printer, FileText, Activity, Scale, Landmark, TableProperties } from 'lucide-react';
 
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -77,7 +77,8 @@ const Reports: React.FC = () => {
         const incomeShare = filteredTransactions.reduce((acc, t) => {
             return acc + (payerType === Payer.ALTAN ? t.partnerShareAltan : t.partnerShareSuat);
         }, 0);
-        const paidExpenses = filteredExpenses.filter(e => e.paidBy === payerType).reduce((acc, e) => acc + e.amount, 0);
+        // BUG FIX: operationalExpenses kullanarak hakediş giderlerini hariç tut
+        const paidExpenses = operationalExpenses.filter(e => e.paidBy === payerType).reduce((acc, e) => acc + e.amount, 0);
         const shareOfExpenses = totalExpenses / 2;
         const netProfitShare = incomeShare - shareOfExpenses;
         return { grossShare: incomeShare, paidExpenses, shareOfExpenses, netProfitShare, totalBalance: netProfitShare + paidExpenses };
@@ -85,6 +86,39 @@ const Reports: React.FC = () => {
 
     const altanStats = calculatePartnerStats(Payer.ALTAN);
     const suatStats = calculatePartnerStats(Payer.SUAT);
+
+    // --- ORTAKLAR ARASI MUTABAKAT ---
+    const expenseDiff = altanStats.paidExpenses - suatStats.paidExpenses;
+    const settlementAmount = Math.abs(expenseDiff) / 2;
+    const settlementCreditor = expenseDiff > 0 ? 'Altan' : 'Suat';
+    const settlementDebtor = expenseDiff > 0 ? 'Suat' : 'Altan';
+
+    // --- OFİS KASASI BAKİYESİ ---
+    const officePaidExpenses = operationalExpenses.filter(e => e.paidBy === Payer.OFFICE).reduce((acc, e) => acc + e.amount, 0);
+    const treasuryBalance = totalOfficeRevenue - officePaidExpenses - altanStats.totalBalance - suatStats.totalBalance;
+
+    // --- GİDER DETAY TABLOSU ---
+    const expenseCategoryLabels: Record<string, string> = {
+        [ExpenseCategory.OFFICE_SUPPLIES]: 'Ofis Malzemeleri',
+        [ExpenseCategory.RENT]: 'Kira',
+        [ExpenseCategory.MARKETING]: 'Pazarlama',
+        [ExpenseCategory.PERSONNEL]: 'Personel / Maaş',
+        [ExpenseCategory.UTILITIES]: 'Faturalar',
+        [ExpenseCategory.FOOD]: 'Yemek',
+        [ExpenseCategory.OTHER]: 'Diğer',
+    };
+
+    const expenseBreakdown = useMemo(() => {
+        const categories = Object.values(ExpenseCategory).filter(c => c !== ExpenseCategory.COMMISSION);
+        return categories.map(cat => {
+            const catExpenses = operationalExpenses.filter(e => e.category === cat);
+            const altanAmount = catExpenses.filter(e => e.paidBy === Payer.ALTAN).reduce((a, e) => a + e.amount, 0);
+            const suatAmount = catExpenses.filter(e => e.paidBy === Payer.SUAT).reduce((a, e) => a + e.amount, 0);
+            const officeAmount = catExpenses.filter(e => e.paidBy === Payer.OFFICE).reduce((a, e) => a + e.amount, 0);
+            const total = altanAmount + suatAmount + officeAmount;
+            return { category: cat, label: expenseCategoryLabels[cat] || cat, altanAmount, suatAmount, officeAmount, total };
+        }).filter(row => row.total > 0);
+    }, [operationalExpenses]);
 
     const consultantPerformance = consultants.map(c => {
         const consTrans = filteredTransactions.filter(t => t.consultantId === c.id);
@@ -250,71 +284,212 @@ const Reports: React.FC = () => {
     );
 
     const renderPartners = () => (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-300 print:block print:space-y-6">
-            <h2 className="hidden print:block text-xl font-bold text-slate-900 border-b border-slate-300 pb-2 mb-4 col-span-2">2. Ortak Durumu (Cari)</h2>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden print:break-inside-avoid">
-                <div className="bg-indigo-50 p-4 border-b border-indigo-100 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700 font-bold">A</div>
-                    <div>
-                        <h3 className="font-bold text-indigo-900">Altan (Ortak)</h3>
-                        <p className="text-xs text-indigo-600">Hesap Özeti</p>
+        <div className="space-y-6 animate-in fade-in duration-300">
+            <h2 className="hidden print:block text-xl font-bold text-slate-900 border-b border-slate-300 pb-2 mb-4">2. Ortak Durumu (Cari)</h2>
+
+            {/* --- ORTAK KARTLARI --- */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:block print:space-y-6">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden print:break-inside-avoid">
+                    <div className="bg-indigo-50 p-4 border-b border-indigo-100 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700 font-bold">A</div>
+                        <div>
+                            <h3 className="font-bold text-indigo-900">Altan (Ortak)</h3>
+                            <p className="text-xs text-indigo-600">Hesap Özeti</p>
+                        </div>
+                    </div>
+                    <div className="p-6 space-y-4">
+                        <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                            <span className="text-slate-600 text-sm">Brüt Gelir Payı</span>
+                            <span className="font-medium text-slate-900">{formatCurrency(altanStats.grossShare)}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                            <span className="text-rose-600 text-sm">Ofis Gider Payı (%50)</span>
+                            <span className="font-medium text-rose-600">-{formatCurrency(altanStats.shareOfExpenses)}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                            <span className="text-emerald-600 text-sm font-medium">Net Kâr Payı</span>
+                            <span className="font-bold text-emerald-600">{formatCurrency(altanStats.netProfitShare)}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-slate-50 bg-slate-50/50 px-2 rounded">
+                            <span className="text-slate-700 text-sm flex items-center gap-1"><Wallet size={14} /> Cepten Ödediği Gider</span>
+                            <span className="font-bold text-slate-900">+{formatCurrency(altanStats.paidExpenses)}</span>
+                        </div>
+                        <div className="mt-4 pt-4 border-t-2 border-slate-100">
+                            <p className="text-sm text-slate-500 text-center mb-1">Toplam Alacak Bakiye</p>
+                            <p className="text-3xl font-bold text-center text-indigo-700">{formatCurrency(altanStats.totalBalance)}</p>
+                        </div>
                     </div>
                 </div>
-                <div className="p-6 space-y-4">
-                    <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                        <span className="text-slate-600 text-sm">Brüt Gelir Payı</span>
-                        <span className="font-medium text-slate-900">{formatCurrency(altanStats.grossShare)}</span>
+
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden print:break-inside-avoid">
+                    <div className="bg-violet-50 p-4 border-b border-violet-100 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-violet-200 flex items-center justify-center text-violet-700 font-bold">S</div>
+                        <div>
+                            <h3 className="font-bold text-violet-900">Suat (Ortak)</h3>
+                            <p className="text-xs text-violet-600">Hesap Özeti</p>
+                        </div>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                        <span className="text-rose-600 text-sm">Ofis Gider Payı</span>
-                        <span className="font-medium text-rose-600">-{formatCurrency(altanStats.shareOfExpenses)}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                        <span className="text-emerald-600 text-sm font-medium">Net Kâr Payı</span>
-                        <span className="font-bold text-emerald-600">{formatCurrency(altanStats.netProfitShare)}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-slate-50 bg-slate-50/50 px-2 rounded">
-                        <span className="text-slate-700 text-sm flex items-center gap-1"><Wallet size={14} /> Cepten Ödediği Gider</span>
-                        <span className="font-bold text-slate-900">+{formatCurrency(altanStats.paidExpenses)}</span>
-                    </div>
-                    <div className="mt-4 pt-4 border-t-2 border-slate-100">
-                        <p className="text-sm text-slate-500 text-center mb-1">Toplam Alacak Bakiye</p>
-                        <p className="text-3xl font-bold text-center text-indigo-700">{formatCurrency(altanStats.totalBalance)}</p>
+                    <div className="p-6 space-y-4">
+                        <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                            <span className="text-slate-600 text-sm">Brüt Gelir Payı</span>
+                            <span className="font-medium text-slate-900">{formatCurrency(suatStats.grossShare)}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                            <span className="text-rose-600 text-sm">Ofis Gider Payı (%50)</span>
+                            <span className="font-medium text-rose-600">-{formatCurrency(suatStats.shareOfExpenses)}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                            <span className="text-emerald-600 text-sm font-medium">Net Kâr Payı</span>
+                            <span className="font-bold text-emerald-600">{formatCurrency(suatStats.netProfitShare)}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-slate-50 bg-slate-50/50 px-2 rounded">
+                            <span className="text-slate-700 text-sm flex items-center gap-1"><Wallet size={14} /> Cepten Ödediği Gider</span>
+                            <span className="font-bold text-slate-900">+{formatCurrency(suatStats.paidExpenses)}</span>
+                        </div>
+                        <div className="mt-4 pt-4 border-t-2 border-slate-100">
+                            <p className="text-sm text-slate-500 text-center mb-1">Toplam Alacak Bakiye</p>
+                            <p className="text-3xl font-bold text-center text-violet-700">{formatCurrency(suatStats.totalBalance)}</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
+            {/* --- ORTAKLAR ARASI MUTABAKAT --- */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden print:break-inside-avoid">
-                <div className="bg-violet-50 p-4 border-b border-violet-100 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-violet-200 flex items-center justify-center text-violet-700 font-bold">S</div>
+                <div className="bg-amber-50 p-4 border-b border-amber-100 flex items-center gap-3">
+                    <div className="p-2 bg-amber-200 rounded-lg">
+                        <Scale size={20} className="text-amber-700" />
+                    </div>
                     <div>
-                        <h3 className="font-bold text-violet-900">Suat (Ortak)</h3>
-                        <p className="text-xs text-violet-600">Hesap Özeti</p>
+                        <h3 className="font-bold text-amber-900">Ortaklar Arası Mutabakat</h3>
+                        <p className="text-xs text-amber-600">Cepten ödenen giderlerin dengelenmesi</p>
                     </div>
                 </div>
-                <div className="p-6 space-y-4">
+                <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 text-center">
+                            <p className="text-xs text-indigo-600 font-medium mb-1">Altan Cepten Ödediği</p>
+                            <p className="text-lg font-bold text-indigo-700">{formatCurrency(altanStats.paidExpenses)}</p>
+                        </div>
+                        <div className="bg-violet-50 p-4 rounded-lg border border-violet-100 text-center">
+                            <p className="text-xs text-violet-600 font-medium mb-1">Suat Cepten Ödediği</p>
+                            <p className="text-lg font-bold text-violet-700">{formatCurrency(suatStats.paidExpenses)}</p>
+                        </div>
+                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 text-center">
+                            <p className="text-xs text-slate-500 font-medium mb-1">Fark</p>
+                            <p className="text-lg font-bold text-slate-900">{formatCurrency(Math.abs(expenseDiff))}</p>
+                        </div>
+                    </div>
+                    {expenseDiff !== 0 ? (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+                            <p className="text-sm text-amber-800">
+                                <span className="font-bold">{settlementCreditor}</span>, gider paylaşımında fazla ödeme yaptığı için{' '}
+                                <span className="font-bold">{settlementDebtor}</span>'dan{' '}
+                                <span className="text-lg font-black text-amber-900">{formatCurrency(settlementAmount)}</span>{' '}
+                                alacaklıdır.
+                            </p>
+                            <p className="text-[10px] text-amber-600 mt-2 italic">Formül: |Altan Ödenen - Suat Ödenen| / 2 (Giderler %50-%50 paylaşıldığı için)</p>
+                        </div>
+                    ) : (
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-center">
+                            <p className="text-sm font-medium text-emerald-700">✓ Ortaklar arası gider dengesi eşit. Mutabakat gerekmez.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* --- OFİS KASASI BAKİYESİ --- */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden print:break-inside-avoid">
+                <div className="bg-slate-800 p-4 border-b border-slate-700 flex items-center gap-3">
+                    <div className="p-2 bg-slate-600 rounded-lg">
+                        <Landmark size={20} className="text-white" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-white">Ofis Kasası Bakiyesi</h3>
+                        <p className="text-xs text-slate-400">Kasadaki nakit akışı özeti</p>
+                    </div>
+                </div>
+                <div className="p-6 space-y-3">
                     <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                        <span className="text-slate-600 text-sm">Brüt Gelir Payı</span>
-                        <span className="font-medium text-slate-900">{formatCurrency(suatStats.grossShare)}</span>
+                        <span className="text-emerald-600 text-sm font-medium">Toplam Ofis Geliri</span>
+                        <span className="font-bold text-emerald-600">+{formatCurrency(totalOfficeRevenue)}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                        <span className="text-rose-600 text-sm">Ofis Gider Payı</span>
-                        <span className="font-medium text-rose-600">-{formatCurrency(suatStats.shareOfExpenses)}</span>
+                        <span className="text-rose-600 text-sm">Kasadan Ödenen Giderler</span>
+                        <span className="font-medium text-rose-600">-{formatCurrency(officePaidExpenses)}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                        <span className="text-emerald-600 text-sm font-medium">Net Kâr Payı</span>
-                        <span className="font-bold text-emerald-600">{formatCurrency(suatStats.netProfitShare)}</span>
+                        <span className="text-indigo-600 text-sm">Altan'a Ödenmesi Gereken</span>
+                        <span className="font-medium text-indigo-600">-{formatCurrency(altanStats.totalBalance)}</span>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-slate-50 bg-slate-50/50 px-2 rounded">
-                        <span className="text-slate-700 text-sm flex items-center gap-1"><Wallet size={14} /> Cepten Ödediği Gider</span>
-                        <span className="font-bold text-slate-900">+{formatCurrency(suatStats.paidExpenses)}</span>
+                    <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                        <span className="text-violet-600 text-sm">Suat'a Ödenmesi Gereken</span>
+                        <span className="font-medium text-violet-600">-{formatCurrency(suatStats.totalBalance)}</span>
                     </div>
-                    <div className="mt-4 pt-4 border-t-2 border-slate-100">
-                        <p className="text-sm text-slate-500 text-center mb-1">Toplam Alacak Bakiye</p>
-                        <p className="text-3xl font-bold text-center text-violet-700">{formatCurrency(suatStats.totalBalance)}</p>
+                    <div className="mt-4 pt-4 border-t-2 border-slate-200">
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm font-bold text-slate-700">Kasa Bakiyesi</span>
+                            <span className={`text-2xl font-black ${treasuryBalance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                {formatCurrency(treasuryBalance)}
+                            </span>
+                        </div>
+                        {treasuryBalance < 0 && (
+                            <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
+                                <AlertTriangle size={16} className="text-red-600 flex-shrink-0" />
+                                <p className="text-xs text-red-700">Kasada yeterli fon bulunmamaktadır. Ortaklara yapılacak ödemeler için ek gelir gereklidir.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
+
+            {/* --- GİDER DETAY TABLOSU --- */}
+            {expenseBreakdown.length > 0 && (
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden print:break-inside-avoid">
+                    <div className="bg-slate-50 p-4 border-b border-slate-200 flex items-center gap-3">
+                        <div className="p-2 bg-slate-200 rounded-lg">
+                            <TableProperties size={20} className="text-slate-600" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-slate-800">Gider Detay Tablosu</h3>
+                            <p className="text-xs text-slate-500">Kategoriye ve ödeyene göre gider kırılımı</p>
+                        </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 border-b border-slate-200">
+                                <tr>
+                                    <th className="px-6 py-3 font-semibold text-slate-700">Kategori</th>
+                                    <th className="px-6 py-3 font-semibold text-indigo-700 text-right">Altan</th>
+                                    <th className="px-6 py-3 font-semibold text-violet-700 text-right">Suat</th>
+                                    <th className="px-6 py-3 font-semibold text-slate-700 text-right">Ofis Kasası</th>
+                                    <th className="px-6 py-3 font-semibold text-slate-900 text-right">Toplam</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {expenseBreakdown.map(row => (
+                                    <tr key={row.category} className="hover:bg-slate-50/50">
+                                        <td className="px-6 py-3 font-medium text-slate-700">{row.label}</td>
+                                        <td className="px-6 py-3 text-right text-indigo-600">{row.altanAmount > 0 ? formatCurrency(row.altanAmount) : '-'}</td>
+                                        <td className="px-6 py-3 text-right text-violet-600">{row.suatAmount > 0 ? formatCurrency(row.suatAmount) : '-'}</td>
+                                        <td className="px-6 py-3 text-right text-slate-600">{row.officeAmount > 0 ? formatCurrency(row.officeAmount) : '-'}</td>
+                                        <td className="px-6 py-3 text-right font-bold text-slate-900">{formatCurrency(row.total)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                            <tfoot className="bg-slate-100 border-t-2 border-slate-200">
+                                <tr>
+                                    <td className="px-6 py-3 font-bold text-slate-900">TOPLAM</td>
+                                    <td className="px-6 py-3 text-right font-bold text-indigo-700">{formatCurrency(altanStats.paidExpenses)}</td>
+                                    <td className="px-6 py-3 text-right font-bold text-violet-700">{formatCurrency(suatStats.paidExpenses)}</td>
+                                    <td className="px-6 py-3 text-right font-bold text-slate-700">{formatCurrency(officePaidExpenses)}</td>
+                                    <td className="px-6 py-3 text-right font-black text-slate-900">{formatCurrency(totalExpenses)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            )}
         </div>
     );
 

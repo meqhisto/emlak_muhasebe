@@ -89,12 +89,7 @@ description: Emlak Muhasebe Proje Kuralları ve Bağlam Akışı
 - `docker-compose.yml`: `proxy_network` ile NPM bağlantısı
 
 ## 🔮 Gelecekte Eklenebilecek Özellikler
-
-### Orta Öncelik
-- [ ] Mülk Portföyü sayfası (satıştaki/kiralık mülkler, fotoğraf, fiyat)
-- [ ] Müşteri CRM (iletişim geçmişi, ilgi alanları)
 - [ ] PDF Rapor indirme (aylık mali rapor)
-- [ ] E-posta bildirimleri (yeni satış, maaş günü)
 - [ ] Danışman Performans Detay Kartı
 
 ### İleri Seviye
