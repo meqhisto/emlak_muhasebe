@@ -1,7 +1,6 @@
 
 // --- KULLANICI & ROL ŞEMASI ---
 export enum UserRole {
-  ADMIN = 'ADMIN',
   PARTNER = 'ORTAK', // Altan, Suat
   ACCOUNTANT = 'MUHASEBE', // Nalan
 }
@@ -18,8 +17,8 @@ export interface Consultant {
   id: string;
   fullName: string;
   phoneNumber: string;
-  commissionRate: number;
-  startDate: string;
+  commissionRate: number; 
+  startDate: string; 
   isActive: boolean;
 }
 
@@ -42,13 +41,6 @@ export enum TransactionType {
   RENT = 'KIRALAMA',
 }
 
-export enum PropertyType {
-  APARTMENT = 'DAIRE',
-  VILLA = 'VILLA',
-  LAND = 'ARSA',
-  COMMERCIAL = 'TICARI',
-}
-
 export enum PaymentStatus {
   PENDING = 'BEKLIYOR',
   PAID = 'ODENDI',
@@ -58,9 +50,7 @@ export interface Transaction {
   id: string;
   propertyName: string;
   type: TransactionType;
-  propertyType: PropertyType;
   customerName: string;
-  customerPhone: string;
   consultantId: string;
   date: string;
   totalRevenue: number;
@@ -69,7 +59,6 @@ export interface Transaction {
   partnerShareAltan: number;
   partnerShareSuat: number;
   paymentStatus: PaymentStatus;
-  description?: string;
 }
 
 // --- GİDER ŞEMASI ---
@@ -80,7 +69,6 @@ export enum ExpenseCategory {
   PERSONNEL = 'PERSONEL_MAAS',
   UTILITIES = 'FATURALAR',
   FOOD = 'YEMEK',
-  COMMISSION = 'HAKEDIS', // Danışman Hakediş Ödemeleri
   OTHER = 'DIGER',
 }
 
@@ -128,5 +116,5 @@ export interface SystemLog {
   user: string;
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'RESET';
   module: 'EXPENSE' | 'TRANSACTION' | 'SYSTEM' | 'PERSONNEL' | 'CONSULTANT' | 'VENDOR';
-  details: string;
+  description: string;
 }
