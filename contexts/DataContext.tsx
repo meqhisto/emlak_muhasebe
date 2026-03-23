@@ -140,7 +140,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // --- CONSULTANTS ---
     const addConsultant = async (data: Omit<Consultant, 'id'>) => {
-        console.log("Sending consultant data:", data); // Debug log
         try {
             await api.post('/consultants', data);
             await fetchData();
