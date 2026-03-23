@@ -152,8 +152,9 @@ const Expenses: React.FC = () => {
 
   // Filtering
   const filteredExpenses = useMemo(() => {
+    const searchTermLower = searchTerm.toLowerCase();
     return expenses?.filter(e => {
-      const matchesSearch = e.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = e.description.toLowerCase().includes(searchTermLower);
       const matchesCategory = filterCategory === 'ALL' || e.category === filterCategory;
       const matchesStatus = filterStatus === 'ALL' || (filterStatus === 'PAID' ? e.isPaid : !e.isPaid);
       const matchesPayer = filterPayer === 'ALL' || e.paidBy === filterPayer;

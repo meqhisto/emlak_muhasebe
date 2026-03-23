@@ -62,13 +62,31 @@ const Dashboard: React.FC = () => {
       transactionCount: 0,
     };
 
-    const totalRev = filteredTransactions.reduce((acc, t) => acc + t.totalRevenue, 0);
-    const officeRev = filteredTransactions.reduce((acc, t) => acc + t.officeRevenue, 0);
-    const totalExp = filteredExpenses.reduce((acc, e) => acc + e.amount, 0);
-    const totalUnpaid = filteredExpenses.filter(e => !e.isPaid).reduce((acc, e) => acc + e.amount, 0);
+    // Single pass for transactions
+    let totalRev = 0;
+    let officeRev = 0;
+    for (const t of filteredTransactions) {
+      totalRev += t.totalRevenue;
+      officeRev += t.officeRevenue;
+    }
+
+    // Single pass for expenses
+    let totalExp = 0;
+    let totalUnpaid = 0;
+    for (const e of filteredExpenses) {
+      totalExp += e.amount;
+      if (!e.isPaid) {
+        totalUnpaid += e.amount;
+      }
+    }
+
+    let activeConsultants = 0;
+    for (const c of consultants) {
+      if (c.isActive) activeConsultants++;
+    }
 
     return {
-      activeConsultants: consultants.filter(c => c.isActive).length,
+      activeConsultants,
       totalRevenue: totalRev,
       officeRevenue: officeRev,
       totalExpenses: totalExp,

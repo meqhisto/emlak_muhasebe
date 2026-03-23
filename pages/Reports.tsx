@@ -42,23 +42,27 @@ const Reports: React.FC = () => {
     // --- MONTHLY DATA FOR CHART ---
     const monthlyChartData = useMemo(() => {
         const months = ['Ocak', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-        return months.map((name, index) => {
-            const rev = transactions
-                .filter(t => {
-                    const d = new Date(t.date);
-                    return d.getFullYear() === selectedYear && d.getMonth() === index;
-                })
-                .reduce((acc, t) => acc + t.officeRevenue, 0);
 
-            const exp = expenses
-                .filter(e => {
-                    const d = new Date(e.date);
-                    return d.getFullYear() === selectedYear && d.getMonth() === index;
-                })
-                .reduce((acc, e) => acc + e.amount, 0);
+        // Initialize the result array
+        const result = months.map(name => ({ name, revenue: 0, expense: 0 }));
 
-            return { name, revenue: rev, expense: exp };
-        });
+        // Single pass over transactions
+        for (const t of transactions) {
+            const d = new Date(t.date);
+            if (d.getFullYear() === selectedYear) {
+                result[d.getMonth()].revenue += t.officeRevenue;
+            }
+        }
+
+        // Single pass over expenses
+        for (const e of expenses) {
+            const d = new Date(e.date);
+            if (d.getFullYear() === selectedYear) {
+                result[d.getMonth()].expense += e.amount;
+            }
+        }
+
+        return result;
     }, [transactions, expenses, selectedYear]);
 
     // --- CALCULATIONS ---
