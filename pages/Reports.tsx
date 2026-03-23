@@ -42,23 +42,27 @@ const Reports: React.FC = () => {
     // --- MONTHLY DATA FOR CHART ---
     const monthlyChartData = useMemo(() => {
         const months = ['Ocak', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-        return months.map((name, index) => {
-            const rev = transactions
-                .filter(t => {
-                    const d = new Date(t.date);
-                    return d.getFullYear() === selectedYear && d.getMonth() === index;
-                })
-                .reduce((acc, t) => acc + t.officeRevenue, 0);
 
-            const exp = expenses
-                .filter(e => {
-                    const d = new Date(e.date);
-                    return d.getFullYear() === selectedYear && d.getMonth() === index;
-                })
-                .reduce((acc, e) => acc + e.amount, 0);
+        // ⚡ Bolt: Optimize monthly chart data calculation.
+        // Replaced O(12 * n) mapping with a single pass O(n) calculation.
+        // This dramatically reduces CPU cycles, especially when transactions/expenses grow large.
+        const chartData = months.map(name => ({ name, revenue: 0, expense: 0 }));
 
-            return { name, revenue: rev, expense: exp };
+        transactions.forEach(t => {
+            const d = new Date(t.date);
+            if (d.getFullYear() === selectedYear) {
+                chartData[d.getMonth()].revenue += t.officeRevenue;
+            }
         });
+
+        expenses.forEach(e => {
+            const d = new Date(e.date);
+            if (d.getFullYear() === selectedYear) {
+                chartData[d.getMonth()].expense += e.amount;
+            }
+        });
+
+        return chartData;
     }, [transactions, expenses, selectedYear]);
 
     // --- CALCULATIONS ---
