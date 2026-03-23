@@ -19,8 +19,6 @@ function AppContent() {
   const { currentUser, isAuthenticated, login, logout, loading } = useAuth();
   const location = useLocation();
 
-  console.log("AppContent Render", { isAuthenticated, loading, path: location.pathname });
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-100">
