@@ -12,12 +12,12 @@ interface PaymentFormModalProps {
   onConfirmPayment: (id: string) => void;
 }
 
-const PaymentFormModal: React.FC<PaymentFormModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  transaction, 
+const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
+  isOpen,
+  onClose,
+  transaction,
   consultant,
-  onConfirmPayment 
+  onConfirmPayment
 }) => {
   if (!isOpen || !transaction || !consultant) return null;
 
@@ -26,46 +26,49 @@ const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
-  };
+    const content = document.getElementById('hakedis-modal-content');
+    if (!content) return;
 
-  const handleClose = () => {
-    onClose();
+    const printWindow = window.open('', '_blank', 'width=900,height=800');
+    if (!printWindow) return;
+
+    // Mevcut sayfadaki tüm CSS'leri topla
+    const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+      .map(el => el.outerHTML)
+      .join('\n');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Hakediş Belgesi - ${consultant.fullName}</title>
+        ${styles}
+        <style>
+          body { margin: 0; padding: 20px; background: white; }
+          .no-print { display: none !important; }
+          @media print {
+            body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          }
+        </style>
+      </head>
+      <body>
+        ${content.innerHTML}
+        <script>
+          window.onload = function() {
+            setTimeout(function() { window.print(); }, 500);
+          };
+        <\/script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const isPaid = transaction.paymentStatus === PaymentStatus.PAID;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm print:static print:p-0 print:bg-white print:block">
-      {/* Explicit print styles to hide everything else and ensure exact A4 dimensions */}
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
       <style>{`
-        @media print {
-          @page {
-            margin: 0;
-            size: auto;
-          }
-          body {
-            visibility: hidden;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            margin: 0;
-            padding: 0;
-          }
-          #hakedis-modal-content {
-            visibility: visible;
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 210mm; /* Fixed A4 Width */
-            margin: 0;
-            padding: 0;
-            box-shadow: none;
-            transform: none !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }
@@ -77,12 +80,11 @@ const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
           border-radius: 10px;
         }
       `}</style>
-
-      <div 
+      <div
         id="hakedis-modal-content"
         className="bg-white w-full max-w-3xl max-h-[90vh] shadow-2xl rounded-xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 print:max-h-none print:rounded-none print:shadow-none print:w-[210mm]"
       >
-        
+
         {/* Modal Controls - Hidden when printing */}
         <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50 no-print">
           <h3 className="font-semibold text-slate-800 flex items-center gap-2">
@@ -90,13 +92,13 @@ const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
             Hakediş Formu Görüntüleme
           </h3>
           <div className="flex items-center gap-2">
-            <button 
+            <button
               onClick={handlePrint}
               className="px-3 py-1.5 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 text-sm font-medium flex items-center gap-2 transition-colors shadow-sm"
             >
               <Printer size={16} /> Yazdır
             </button>
-            <button 
+            <button
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
             >
@@ -107,20 +109,20 @@ const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
 
         {/* Scrollable Form Container */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-8 bg-slate-100/30 print:overflow-visible print:p-0 print:bg-white">
-          
+
           {/* --- THE A4 FORM CONTENT --- */}
-          <div className="bg-white border border-slate-300 shadow-sm mx-auto p-8 relative print:p-10 print:border-none print:shadow-none" 
-               style={{ minHeight: '297mm', width: '100%', maxWidth: '210mm' }}>
-            
+          <div className="bg-white border border-slate-300 shadow-sm mx-auto p-8 relative print:p-10 print:border-none print:shadow-none"
+            style={{ minHeight: '297mm', width: '100%', maxWidth: '210mm' }}>
+
             {/* Watermark for Status */}
             {isPaid ? (
-               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -rotate-45 pointer-events-none opacity-[0.08] border-8 border-green-600 text-green-600 text-8xl font-black uppercase p-8 rounded-3xl print:opacity-[0.15]">
-                 ÖDENDİ
-               </div>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -rotate-45 pointer-events-none opacity-[0.08] border-8 border-green-600 text-green-600 text-8xl font-black uppercase p-8 rounded-3xl print:opacity-[0.15]">
+                ÖDENDİ
+              </div>
             ) : (
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -rotate-45 pointer-events-none opacity-[0.03] border-8 border-slate-400 text-slate-400 text-8xl font-black uppercase p-8 rounded-3xl">
-                 ÖNİZLEME
-               </div>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -rotate-45 pointer-events-none opacity-[0.03] border-8 border-slate-400 text-slate-400 text-8xl font-black uppercase p-8 rounded-3xl">
+                ÖNİZLEME
+              </div>
             )}
 
             {/* Header */}
@@ -156,7 +158,7 @@ const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                   <div>
                     <span className="block text-[10px] text-slate-400 uppercase font-black mb-1">Ödeme Durumu</span>
                     <span className={`font-bold ${isPaid ? 'text-emerald-600' : 'text-orange-600'}`}>
-                        {isPaid ? 'ÖDENDİ / KAPALI' : 'BEKLEMEDE / AÇIK'}
+                      {isPaid ? 'ÖDENDİ / KAPALI' : 'BEKLEMEDE / AÇIK'}
                     </span>
                   </div>
                 </div>
@@ -177,7 +179,10 @@ const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                     <tr>
                       <td className="px-4 py-5">
                         <p className="font-bold text-slate-900">{transaction.propertyName}</p>
-                        <p className="text-xs text-slate-500 mt-1">Müşteri: {transaction.customerName}</p>
+                        <div className="flex flex-col gap-0.5 mt-1">
+                          <p className="text-xs text-slate-500">Müşteri: {transaction.customerName} ({transaction.customerPhone})</p>
+                          <p className="text-[10px] text-indigo-500 font-bold uppercase">{transaction.propertyType}</p>
+                        </div>
                       </td>
                       <td className="px-4 py-5">
                         <span className="inline-block px-2 py-1 bg-slate-100 rounded text-[10px] font-bold uppercase text-slate-700">
@@ -246,7 +251,7 @@ const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
           <div className="bg-slate-50 border-t border-slate-100 p-4 flex justify-end gap-3 no-print">
             <button
               type="button"
-              onClick={handleClose}
+              onClick={onClose}
               className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors"
             >
               İptal
@@ -254,13 +259,14 @@ const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
             <button
               type="button"
               onClick={() => {
-                onConfirmPayment(transaction.id);
-                handleClose();
+                if (window.confirm('Bu hakediş ödemesini onaylıyor musunuz?')) {
+                  onConfirmPayment(transaction.id);
+                }
               }}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-bold shadow-md transition-all active:scale-95 flex items-center gap-2"
             >
               <CheckCircle size={18} />
-              Hakedişi Öde
+              Hakedişi Öde ve Kapat
             </button>
           </div>
         )}

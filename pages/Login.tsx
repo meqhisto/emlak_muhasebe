@@ -2,56 +2,33 @@
 import React, { useState, useEffect } from 'react';
 import { User, UserRole } from '../types';
 import { Building2, Lock, User as UserIcon, AlertCircle, LogIn } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
-interface LoginProps {
-  onLogin: (user: User) => void;
-}
-
-const Login: React.FC<LoginProps> = ({ onLogin }) => {
+const Login: React.FC = () => {
+  const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Uygulama ilk çalıştığında yetkili kullanıcıları tanımla
-  useEffect(() => {
-    const predefinedUsers = [
-      { id: 'u1', username: 'altan', password: 'altan2025', name: 'Altan Bey', role: UserRole.PARTNER },
-      { id: 'u2', username: 'suat', password: 'suat2025', name: 'Suat Bey', role: UserRole.PARTNER },
-      { id: 'u3', username: 'nalan', password: 'nalan2025', name: 'Nalan Hanım', role: UserRole.ACCOUNTANT }
-    ];
-    
-    // Sadece henüz kullanıcılar tanımlanmamışsa localStorage'a ekle
-    const stored = localStorage.getItem('emlak_auth_users');
-    if (!stored || JSON.parse(stored).length === 0) {
-      localStorage.setItem('emlak_auth_users', JSON.stringify(predefinedUsers));
-    }
-  }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Ağ gecikmesi simülasyonu
-    setTimeout(() => {
-      const storedUsersRaw = localStorage.getItem('emlak_auth_users');
-      const users: any[] = storedUsersRaw ? JSON.parse(storedUsersRaw) : [];
-
-      const user = users.find(u => 
-        u.username === username.toLowerCase().trim() && 
-        u.password === password
-      );
-      
-      if (user) {
-        // Şifreyi session verisinden çıkararak login yap
-        const { password: _, ...userSession } = user;
-        onLogin(userSession as User);
-      } else {
+    try {
+      await login({ username, password });
+    } catch (err: any) {
+      if (err.response?.status === 400) { // Bad Request usually means invalid credentials
         setError('Kullanıcı adı veya şifre hatalı.');
-        setIsLoading(false);
+      } else {
+        setError('Giriş yapılırken bir hata oluştu. Sunucuya erişilemiyor olabilir.');
       }
-    }, 600);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -138,7 +115,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           <div className="mt-10 pt-6 border-t border-slate-50">
             <p className="text-center text-[10px] text-slate-400 leading-relaxed font-bold uppercase tracking-tighter">
-              Bu sistem sadece yetkili personel içindir. <br/> Tüm işlemler kayıt altına alınmaktadır.
+              Bu sistem sadece yetkili personel içindir. <br /> Tüm işlemler kayıt altına alınmaktadır.
             </p>
           </div>
         </div>
