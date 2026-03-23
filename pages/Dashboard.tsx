@@ -62,10 +62,23 @@ const Dashboard: React.FC = () => {
       transactionCount: 0,
     };
 
-    const totalRev = filteredTransactions.reduce((acc, t) => acc + t.totalRevenue, 0);
-    const officeRev = filteredTransactions.reduce((acc, t) => acc + t.officeRevenue, 0);
-    const totalExp = filteredExpenses.reduce((acc, e) => acc + e.amount, 0);
-    const totalUnpaid = filteredExpenses.filter(e => !e.isPaid).reduce((acc, e) => acc + e.amount, 0);
+    const { totalRev, officeRev } = filteredTransactions.reduce(
+      (acc, t) => {
+        acc.totalRev += t.totalRevenue;
+        acc.officeRev += t.officeRevenue;
+        return acc;
+      },
+      { totalRev: 0, officeRev: 0 }
+    );
+
+    const { totalExp, totalUnpaid } = filteredExpenses.reduce(
+      (acc, e) => {
+        acc.totalExp += e.amount;
+        if (!e.isPaid) acc.totalUnpaid += e.amount;
+        return acc;
+      },
+      { totalExp: 0, totalUnpaid: 0 }
+    );
 
     return {
       activeConsultants: consultants.filter(c => c.isActive).length,
