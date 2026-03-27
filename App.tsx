@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { DataProvider } from './contexts/DataContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -6,56 +9,58 @@ import Consultants from './pages/Consultants';
 import Transactions from './pages/Transactions';
 import Expenses from './pages/Expenses';
 import PersonnelPage from './pages/Personnel';
-import Vendors from './pages/Vendors'; // Yeni sayfa eklendi
+import Vendors from './pages/Vendors';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import { User } from './types';
+import PrintTransaction from './pages/PrintTransaction'; // Yeni print sayfası
+// import { User } from './types'; // User type is now handled by AuthContext
 
-const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState('/');
+function AppContent() {
+  const { currentUser, isAuthenticated, login, logout, loading } = useAuth();
+  const location = useLocation();
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('emlak_user');
-    if (storedUser) {
-      try { setUser(JSON.parse(storedUser)); } catch (e) { localStorage.removeItem('emlak_user'); }
-    }
-  }, []);
+  console.log("AppContent Render", { isAuthenticated, loading, path: location.pathname });
 
-  const handleLogin = (newUser: User) => {
-    setUser(newUser);
-    localStorage.setItem('emlak_user', JSON.stringify(newUser));
-    setCurrentPage('/');
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100">
+        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('emlak_user');
-    setCurrentPage('/');
-  };
-
-  const renderPage = () => {
-    if (!user) return <Login onLogin={handleLogin} />;
-    switch (currentPage) {
-      case '/': return <Dashboard user={user} />;
-      case '/consultants': return <Consultants currentUser={user} />;
-      case '/vendors': return <Vendors currentUser={user} />; // Yeni route
-      case '/personnel': return <PersonnelPage currentUser={user} />;
-      case '/transactions': return <Transactions currentUser={user} />;
-      case '/expenses': return <Expenses currentUser={user} />;
-      case '/reports': return <Reports />;
-      case '/settings': return <Settings currentUser={user} />;
-      default: return <Dashboard user={user} />;
-    }
-  };
-
-  if (!user) return <Login onLogin={handleLogin} />;
+  if (!isAuthenticated) {
+    return <Login />;
+  }
 
   return (
-    <Layout user={user} onLogout={handleLogout} currentPage={currentPage} onNavigate={setCurrentPage}>
-      {renderPage()}
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/consultants" element={<Consultants />} />
+        <Route path="/vendors" element={<Vendors />} />
+        <Route path="/personnel" element={<PersonnelPage />} />
+        <Route path="/transactions" element={<Transactions />} />
+        <Route path="/expenses" element={<Expenses />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/print-transaction" element={<PrintTransaction />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Layout>
   );
-};
+}
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <DataProvider>
+          <AppContent />
+        </DataProvider>
+      </AuthProvider>
+    </Router>
+  );
+}
 
 export default App;

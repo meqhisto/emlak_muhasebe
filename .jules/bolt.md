@@ -1,0 +1,3 @@
+## 2024-03-23 - Avoiding O(12 * N) nested mappings in Reports
+**Learning:** In the `pages/Reports.tsx` component, computing monthly data involved a `months.map(...)` over 12 items. Inside this map loop, the code filtered all transactions and expenses to calculate totals for each month. This means for `N` transactions/expenses, the loop was iterating 12 times (O(12 * N) complexity).
+**Action:** Replace the nested filtering logic with a single-pass loop (O(N)) that increments pre-initialized monthly buckets based on the item's date. This reduces unnecessary iterations drastically. Always be cautious when putting `filter` or `reduce` inside a map.
