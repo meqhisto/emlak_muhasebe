@@ -7,10 +7,12 @@ services:
     ports:
       - "3006:3001"
     volumes:
-      # Persist the sqlite database
+      # Şema, migration ve seed dosyaları (kod) — bind mount
       - ./backend/prisma:/app/prisma
+      # Veritabanı (veri) — named volume. Git/host dosya işlemlerinden izole.
+      - emlak_db:/app/data
     environment:
-      - DATABASE_URL=file:/app/prisma/dev.db
+      - DATABASE_URL=file:/app/data/dev.db
       - PORT=3001
       # Add other env vars here or use an env_file
     restart: always
@@ -35,3 +37,7 @@ networks:
   npm_network:
     external: true
     name: proxy_network
+
+volumes:
+  emlak_db:
+    name: emlak_muhasebe_db

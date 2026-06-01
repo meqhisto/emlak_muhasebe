@@ -5,3 +5,5 @@ node_modules
 /src/generated/prisma
 prisma/dev.db
 prisma/prisma/
+prisma/dev.db.backup
+prisma/*.db
