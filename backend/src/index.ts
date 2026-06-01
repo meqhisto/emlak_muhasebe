@@ -19,6 +19,8 @@ import personnelRoutes from './routes/personnelRoutes';
 import vendorRoutes from './routes/vendorRoutes';
 import systemLogRoutes from './routes/systemLogRoutes';
 import salaryPaymentRoutes from './routes/salaryPaymentRoutes';
+import cashTransferRoutes from './routes/cashTransferRoutes';
+import closedPeriodRoutes from './routes/closedPeriodRoutes';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
@@ -28,6 +30,8 @@ app.use('/api/personnel', personnelRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/logs', systemLogRoutes);
 app.use('/api/salary-payments', salaryPaymentRoutes);
+app.use('/api/cash-transfers', cashTransferRoutes);
+app.use('/api/closed-periods', closedPeriodRoutes);
 
 // Basic health check route
 app.get('/api/health', (req, res) => {

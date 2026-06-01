@@ -6,6 +6,8 @@ import {
     Vendor,
     Personnel,
     SalaryPayment,
+    CashTransfer,
+    ClosedPeriod,
     SystemLog
 } from '../types';
 import api from '../services/api';
@@ -17,6 +19,8 @@ interface DataContextType {
     vendors: Vendor[];
     personnel: Personnel[];
     payments: SalaryPayment[];
+    cashTransfers: CashTransfer[];
+    closedPeriods: ClosedPeriod[];
     logs: SystemLog[];
     loading: boolean;
     error: string | null;
@@ -44,6 +48,12 @@ interface DataContextType {
 
     addPayment: (payment: SalaryPayment) => Promise<void>;
 
+    addCashTransfer: (transfer: Omit<CashTransfer, 'id'>) => Promise<void>;
+    deleteCashTransfer: (id: string) => Promise<void>;
+
+    closePeriod: (year: number, month: number, notes?: string) => Promise<void>;
+    openPeriod: (id: string) => Promise<void>;
+
     refreshData: () => Promise<void>;
     refreshLogs: () => Promise<void>;
 }
@@ -56,7 +66,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [consultants, setConsultants] = useState<Consultant[]>([]);
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [personnel, setPersonnel] = useState<Personnel[]>([]);
-    const [payments, setPayments] = useState<SalaryPayment[]>([]); // Backend API needed for this
+    const [payments, setPayments] = useState<SalaryPayment[]>([]);
+    const [cashTransfers, setCashTransfers] = useState<CashTransfer[]>([]);
+    const [closedPeriods, setClosedPeriods] = useState<ClosedPeriod[]>([]);
     const [logs, setLogs] = useState<SystemLog[]>([]);
 
     const [loading, setLoading] = useState(true);
@@ -72,10 +84,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 api.get('/vendors'),
                 api.get('/personnel'),
                 api.get('/logs'),
-                api.get('/salary-payments')
+                api.get('/salary-payments'),
+                api.get('/cash-transfers'),
+                api.get('/closed-periods'),
             ]);
 
-            // Her endpoint bağımsız — biri başarısız olsa bile diğerleri yüklenir
             if (results[0].status === 'fulfilled') setTransactions(results[0].value.data);
             if (results[1].status === 'fulfilled') setExpenses(results[1].value.data);
             if (results[2].status === 'fulfilled') setConsultants(results[2].value.data);
@@ -83,6 +96,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (results[4].status === 'fulfilled') setPersonnel(results[4].value.data);
             if (results[5].status === 'fulfilled') setLogs(results[5].value.data);
             if (results[6].status === 'fulfilled') setPayments(results[6].value.data);
+            if (results[7].status === 'fulfilled') setCashTransfers(results[7].value.data);
+            if (results[8].status === 'fulfilled') setClosedPeriods(results[8].value.data);
 
             const failedCount = results.filter(r => r.status === 'rejected').length;
             if (failedCount > 0) {
@@ -197,6 +212,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await fetchData();
     };
 
+    // --- CASH TRANSFERS ---
+    const addCashTransfer = async (data: Omit<CashTransfer, 'id'>) => {
+        await api.post('/cash-transfers', data);
+        await fetchData();
+    };
+
+    const deleteCashTransfer = async (id: string) => {
+        await api.delete(`/cash-transfers/${id}`);
+        await fetchData();
+    };
+
+    // --- CLOSED PERIODS ---
+    const closePeriod = async (year: number, month: number, notes?: string) => {
+        await api.post('/closed-periods', { year, month, notes });
+        await fetchData();
+    };
+
+    const openPeriod = async (id: string) => {
+        await api.delete(`/closed-periods/${id}`);
+        await fetchData();
+    };
+
     const refreshLogs = async () => {
         try {
             const res = await api.get('/logs');
@@ -208,7 +245,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     return (
         <DataContext.Provider value={{
-            transactions, expenses, consultants, vendors, personnel, payments, logs,
+            transactions, expenses, consultants, vendors, personnel, payments, cashTransfers, closedPeriods, logs,
             loading, error,
             addTransaction, updateTransaction, deleteTransaction,
             addExpense, updateExpense, deleteExpense,
@@ -216,6 +253,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             addVendor, updateVendor, deleteVendor,
             addPersonnel, updatePersonnel, deletePersonnel,
             addPayment,
+            addCashTransfer, deleteCashTransfer,
+            closePeriod, openPeriod,
             refreshData: fetchData,
             refreshLogs
         }}>

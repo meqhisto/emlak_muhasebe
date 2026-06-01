@@ -3,7 +3,7 @@ import prisma from '../prisma';
 
 export const createAuditLog = async (
     req: AuthRequest,
-    action: 'CREATE' | 'UPDATE' | 'DELETE',
+    action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'RESET',
     module: 'TRANSACTION' | 'EXPENSE' | 'CONSULTANT' | 'PERSONNEL' | 'VENDOR' | 'SYSTEM' | 'SALARY',
     details: string
 ) => {

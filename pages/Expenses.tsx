@@ -39,6 +39,7 @@ const Expenses: React.FC = () => {
     amount: '',
     date: new Date().toISOString().split('T')[0],
     paidBy: Payer.OFFICE,
+    paidToPartner: '' as Payer | '',
     notes: '',
     isPaid: true,
     vendorId: '',
@@ -87,6 +88,7 @@ const Expenses: React.FC = () => {
         amount: expenseToEdit.amount.toString(),
         date: expenseToEdit.date,
         paidBy: expenseToEdit.paidBy,
+        paidToPartner: (expenseToEdit.paidToPartner as Payer | '') || '',
         notes: expenseToEdit.notes || '',
         isPaid: expenseToEdit.isPaid,
         vendorId: expenseToEdit.vendorId || '',
@@ -99,6 +101,7 @@ const Expenses: React.FC = () => {
         amount: '',
         date: new Date().toISOString().split('T')[0],
         paidBy: Payer.OFFICE,
+        paidToPartner: '',
         notes: '',
         isPaid: true,
         vendorId: '',
@@ -111,32 +114,22 @@ const Expenses: React.FC = () => {
     e.preventDefault();
     if (!currentUser) return;
 
+    const expenseBase = {
+      description: formData.description,
+      category: formData.category,
+      amount: Number(formData.amount),
+      date: formData.date,
+      paidBy: formData.paidBy,
+      paidToPartner: formData.paidToPartner || undefined,
+      notes: formData.notes,
+      isPaid: formData.isPaid,
+      vendorId: formData.vendorId || undefined,
+    };
+
     if (editingId) {
-      const updatedExpense: Expense = {
-        id: editingId,
-        description: formData.description,
-        category: formData.category,
-        amount: Number(formData.amount),
-        date: formData.date,
-        paidBy: formData.paidBy,
-        notes: formData.notes,
-        isPaid: formData.isPaid,
-        vendorId: formData.vendorId || undefined,
-      };
-      updateExpense(updatedExpense.id, updatedExpense);
+      updateExpense(editingId, expenseBase);
     } else {
-      const newExpense: Expense = {
-        id: Date.now().toString(),
-        description: formData.description,
-        category: formData.category,
-        amount: Number(formData.amount),
-        date: formData.date,
-        paidBy: formData.paidBy,
-        notes: formData.notes,
-        isPaid: formData.isPaid,
-        vendorId: formData.vendorId || undefined,
-      };
-      addExpense(newExpense);
+      addExpense({ ...expenseBase, id: Date.now().toString() } as any);
     }
     setIsModalOpen(false);
   };
@@ -169,6 +162,12 @@ const Expenses: React.FC = () => {
   const filteredByAltan = filteredExpenses.filter(e => e.paidBy === Payer.ALTAN).reduce((acc, e) => acc + e.amount, 0);
   const filteredBySuat = filteredExpenses.filter(e => e.paidBy === Payer.SUAT).reduce((acc, e) => acc + e.amount, 0);
   const filteredByOffice = filteredExpenses.filter(e => e.paidBy === Payer.OFFICE).reduce((acc, e) => acc + e.amount, 0);
+
+  // Cari özet: Her ortağın net alacağı (ödediği − kendisine yapılan ödemeler)
+  const altanPaidToPartner = filteredExpenses.filter(e => e.paidToPartner === Payer.ALTAN).reduce((acc, e) => acc + e.amount, 0);
+  const suatPaidToPartner = filteredExpenses.filter(e => e.paidToPartner === Payer.SUAT).reduce((acc, e) => acc + e.amount, 0);
+  const altanNetReceivable = filteredByAltan - altanPaidToPartner;
+  const suatNetReceivable = filteredBySuat - suatPaidToPartner;
 
   return (
     <div className="space-y-6">
@@ -281,13 +280,64 @@ const Expenses: React.FC = () => {
         </div>
       </div>
 
+      {/* --- CARİ ÖZET --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Altan Cari */}
+        <div className="bg-white rounded-xl border border-indigo-100 shadow-sm overflow-hidden">
+          <div className="bg-indigo-50 px-5 py-3 border-b border-indigo-100 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700 font-bold text-sm">A</div>
+            <span className="font-bold text-indigo-900 text-sm">Altan — Cari Durumu</span>
+          </div>
+          <div className="px-5 py-4 space-y-2 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500">Cepten Ödediği</span>
+              <span className="font-semibold text-indigo-700">+{formatCurrency(filteredByAltan)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500">Kendisine Yapılan Ödemeler</span>
+              <span className="font-semibold text-rose-600">-{formatCurrency(altanPaidToPartner)}</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+              <span className="font-bold text-slate-700">Net Cari Alacak</span>
+              <span className={`text-lg font-black ${altanNetReceivable >= 0 ? 'text-indigo-700' : 'text-red-600'}`}>
+                {formatCurrency(altanNetReceivable)}
+              </span>
+            </div>
+          </div>
+        </div>
+        {/* Suat Cari */}
+        <div className="bg-white rounded-xl border border-violet-100 shadow-sm overflow-hidden">
+          <div className="bg-violet-50 px-5 py-3 border-b border-violet-100 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-violet-200 flex items-center justify-center text-violet-700 font-bold text-sm">S</div>
+            <span className="font-bold text-violet-900 text-sm">Suat — Cari Durumu</span>
+          </div>
+          <div className="px-5 py-4 space-y-2 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500">Cepten Ödediği</span>
+              <span className="font-semibold text-violet-700">+{formatCurrency(filteredBySuat)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500">Kendisine Yapılan Ödemeler</span>
+              <span className="font-semibold text-rose-600">-{formatCurrency(suatPaidToPartner)}</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+              <span className="font-bold text-slate-700">Net Cari Alacak</span>
+              <span className={`text-lg font-black ${suatNetReceivable >= 0 ? 'text-violet-700' : 'text-red-600'}`}>
+                {formatCurrency(suatNetReceivable)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="px-6 py-4 font-semibold text-slate-700">Tarih</th>
-                <th className="px-6 py-4 font-semibold text-slate-700">Ödeyen / Cari</th>
+                <th className="px-6 py-4 font-semibold text-slate-700">Ödeyen</th>
+                <th className="px-6 py-4 font-semibold text-slate-700">Alıcı</th>
                 <th className="px-6 py-4 font-semibold text-slate-700">Açıklama</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-right">Tutar</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-center">Durum</th>
@@ -295,13 +345,19 @@ const Expenses: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredExpenses.map((expense) => (
-                <tr key={expense.id} onClick={() => handleOpenModal(expense)} className="hover:bg-slate-50/50 transition-colors cursor-pointer group">
-                  <td className="px-6 py-4 text-slate-500">{new Date(expense.date).toLocaleDateString('tr-TR')}</td>
+                <tr key={expense.id} onClick={() => handleOpenModal(expense)} className={`hover:bg-slate-50/50 transition-colors cursor-pointer group ${expense.paidToPartner ? 'bg-blue-50/30' : ''}`}>
+                  <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{new Date(expense.date).toLocaleDateString('tr-TR')}</td>
                   <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter mb-0.5">{getPayerLabel(expense.paidBy)}</span>
-                      <span className="font-bold text-slate-800">{getVendorName(expense.vendorId)}</span>
-                    </div>
+                    <span className="text-xs font-bold text-slate-600">{getPayerLabel(expense.paidBy)}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {expense.paidToPartner ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">
+                        → {getPayerLabel(expense.paidToPartner as Payer)}
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 text-xs">{getVendorName(expense.vendorId)}</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-slate-600">
                     <div className="flex items-center gap-2">
@@ -309,7 +365,7 @@ const Expenses: React.FC = () => {
                       {expense.description}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right font-black text-rose-600">-{formatCurrency(expense.amount)}</td>
+                  <td className="px-6 py-4 text-right font-black text-rose-600 whitespace-nowrap">-{formatCurrency(expense.amount)}</td>
                   <td className="px-6 py-4 text-center">
                     {expense.isPaid ? (
                       <span className="inline-flex items-center gap-1 text-emerald-600 font-bold text-[10px] uppercase"><CheckCircle size={14} /> Ödendi</span>
@@ -321,7 +377,7 @@ const Expenses: React.FC = () => {
               ))}
               {filteredExpenses.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
                     <div className="flex flex-col items-center gap-2">
                       <Receipt size={32} className="text-slate-300" />
                       <p>Kayıtlı gider bulunamadı.</p>
@@ -350,13 +406,28 @@ const Expenses: React.FC = () => {
               </select>
             </div>
             <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Kime Ödendi</label>
+              <select
+                value={formData.paidToPartner}
+                onChange={e => setFormData({ ...formData, paidToPartner: e.target.value as Payer | '' })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-white text-slate-900"
+              >
+                <option value="">— Tedarikçi / Genel</option>
+                <option value={Payer.ALTAN}>Altan</option>
+                <option value={Payer.SUAT}>Suat</option>
+              </select>
+            </div>
+          </div>
+
+          {!formData.paidToPartner && (
+            <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Firma / Cari</label>
               <select value={formData.vendorId} onChange={e => setFormData({ ...formData, vendorId: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-white text-slate-900">
                 <option value="">Firma Seçilmedi</option>
                 {vendors?.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
               </select>
             </div>
-          </div>
+          )}
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">Açıklama</label>

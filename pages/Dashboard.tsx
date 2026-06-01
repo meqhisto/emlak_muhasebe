@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { User, Consultant, Transaction, Expense, ExpenseCategory } from '../types';
+import { User, Consultant, Transaction, Expense, ExpenseCategory, Payer } from '../types';
 import { INITIAL_CONSULTANTS, INITIAL_TRANSACTIONS, INITIAL_EXPENSES } from '../constants';
 import { ShieldCheck, Users, Banknote, CheckCircle2, TrendingUp, Building2, Receipt, Target, AlertTriangle, Calendar } from 'lucide-react';
 
@@ -10,7 +10,7 @@ const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz'
 
 const Dashboard: React.FC = () => {
   const { currentUser: user } = useAuth();
-  const { consultants, transactions, expenses } = useData();
+  const { consultants, transactions, expenses, payments } = useData();
   const isPartner = user?.role === 'ORTAK' || user?.role === 'ADMIN';
 
   // Filter State
@@ -29,10 +29,12 @@ const Dashboard: React.FC = () => {
     return Array.from(years).sort((a, b) => b - a);
   }, [transactions, expenses]);
 
-  // Hakediş filtresi
-  const isCommissionExpense = (e: Expense) =>
-    e.category === ExpenseCategory.COMMISSION ||
-    (e.category === ExpenseCategory.PERSONNEL && e.description.toLowerCase().includes('hakediş'));
+  // Otomatik takip edilen (hakediş + maaş) kayıtları operasyonel giderden çıkar
+  const isAutoTrackedExpense = (e: Expense) => {
+    const desc = e.description.toLowerCase();
+    return e.category === ExpenseCategory.COMMISSION ||
+      (e.category === ExpenseCategory.PERSONNEL && (desc.includes('hakediş') || desc.includes('maaş')));
+  };
 
   // Filtered data by selected period
   const filteredTransactions = useMemo(() => {
@@ -47,9 +49,18 @@ const Dashboard: React.FC = () => {
     if (!expenses) return [];
     return expenses.filter(e => {
       const d = new Date(e.date);
-      return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth && !isCommissionExpense(e);
+      // Cari ödemeler (paidToPartner) operasyonel gider değildir — hariç tut
+      return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth && !isAutoTrackedExpense(e) && !e.paidToPartner;
     });
   }, [expenses, selectedYear, selectedMonth]);
+
+  const filteredSalaryPayments = useMemo(() => {
+    if (!payments) return [];
+    return payments.filter(p => {
+      const d = new Date(p.date);
+      return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth;
+    });
+  }, [payments, selectedYear, selectedMonth]);
 
   const stats = useMemo(() => {
     if (!consultants) return {
@@ -74,22 +85,26 @@ const Dashboard: React.FC = () => {
     const { totalExp, totalUnpaid } = filteredExpenses.reduce(
       (acc, e) => {
         acc.totalExp += e.amount;
-        if (!e.isPaid) acc.totalUnpaid += e.amount;
+        // Sadece ofis kasasından ödenmesi gereken ama henüz ödenmeyen giderler uyarıya dahil
+        if (!e.isPaid && e.paidBy === Payer.OFFICE) acc.totalUnpaid += e.amount;
         return acc;
       },
       { totalExp: 0, totalUnpaid: 0 }
     );
 
+    // Maaş ödemeleri de gider olarak dahil edilmeli
+    const totalSalary = filteredSalaryPayments.reduce((acc, p) => acc + p.amount, 0);
+
     return {
       activeConsultants: consultants.filter(c => c.isActive).length,
       totalRevenue: totalRev,
       officeRevenue: officeRev,
-      totalExpenses: totalExp,
+      totalExpenses: totalExp + totalSalary,
       unpaidDebts: totalUnpaid,
-      netProfit: officeRev - totalExp,
+      netProfit: officeRev - totalExp - totalSalary,
       transactionCount: filteredTransactions.length,
     };
-  }, [consultants, filteredTransactions, filteredExpenses]);
+  }, [consultants, filteredTransactions, filteredExpenses, filteredSalaryPayments]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);

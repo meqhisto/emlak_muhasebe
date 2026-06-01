@@ -82,18 +82,19 @@ model Transaction {
 }
 
 model Expense {
-  id          String   @id @default(uuid())
-  date        DateTime
-  category    String   // ExpenseCategory
-  amount      Float
-  description String
-  vendor      Vendor?  @relation(fields: [vendorId], references: [id])
-  vendorId    String?
-  paidBy      String   // OFFICE, ALTAN, SUAT
-  isPaid      Boolean  @default(true)
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(uuid())
+  date           DateTime
+  category       String   // ExpenseCategory
+  amount         Float
+  description    String
+  vendor         Vendor?  @relation(fields: [vendorId], references: [id])
+  vendorId       String?
+  paidBy         String   // OFFICE, ALTAN, SUAT
+  paidToPartner  String?  // ALTAN | SUAT — dolu ise bu gider doğrudan bir ortağa yapılan ödeme
+  isPaid         Boolean  @default(true)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model SalaryPayment {
@@ -103,9 +104,21 @@ model SalaryPayment {
   amount      Float
   date        DateTime
   period      String    // YYYY-MM
+  paidBy      String    @default("OFIS_KASASI") // OFIS_KASASI | ALTAN | SUAT
   isPaid      Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+model ClosedPeriod {
+  id        String   @id @default(uuid())
+  year      Int
+  month     Int      // 0-11 (JS ay indexi); -1 = tüm yıl
+  closedBy  String   // username
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@unique([year, month])
 }
 
 model SystemLog {
@@ -116,4 +129,15 @@ model SystemLog {
   module    String   // TRANSACTION, EXPENSE, CONSULTANT, etc.
   details   String
   ipAddress String?
+}
+
+model CashTransfer {
+  id          String   @id @default(uuid())
+  date        DateTime
+  fromParty   String   // OFIS_KASASI, ALTAN, SUAT
+  toParty     String   // OFIS_KASASI, ALTAN, SUAT
+  amount      Float
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

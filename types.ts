@@ -97,9 +97,10 @@ export interface Expense {
   date: string;
   description: string;
   paidBy: Payer;
+  paidToPartner?: Payer; // Dolu ise bu gider doğrudan bir ortağa yapılan ödemedir
   notes?: string;
   isPaid: boolean;
-  vendorId?: string; // Yeni: Hangi firmaya ait olduğu (Cari bağlantısı)
+  vendorId?: string;
 }
 
 // --- MAAŞ & PERSONEL ŞEMASI ---
@@ -118,7 +119,28 @@ export interface SalaryPayment {
   amount: number;
   date: string;
   period: string;
+  paidBy: Payer;   // Kim ödedi: Ofis Kasası / Altan / Suat
   isPaid: boolean;
+}
+
+// --- DÖNEM KAPATMA ---
+export interface ClosedPeriod {
+  id: string;
+  year: number;
+  month: number;  // 0-11 veya -1 (tüm yıl)
+  closedBy: string;
+  notes?: string;
+  createdAt: string;
+}
+
+// --- NAKİT TRANSFER (Kasa↔Ortak / Ortak↔Ortak) ---
+export interface CashTransfer {
+  id: string;
+  date: string;
+  fromParty: Payer;
+  toParty: Payer;
+  amount: number;
+  description?: string;
 }
 
 // --- LOG SİSTEMİ ---

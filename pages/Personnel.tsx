@@ -35,6 +35,7 @@ const PersonnelPage: React.FC = () => {
     amount: 0,
     date: new Date().toISOString().split('T')[0],
     period: new Date().toISOString().slice(0, 7), // "YYYY-MM"
+    paidBy: Payer.OFFICE as Payer,
   });
 
   // Load Data
@@ -86,6 +87,7 @@ const PersonnelPage: React.FC = () => {
       amount: firstEmp ? firstEmp.monthlySalary : 0,
       date: new Date().toISOString().split('T')[0],
       period: new Date().toISOString().slice(0, 7),
+      paidBy: Payer.OFFICE,
     });
     setIsPaymentModalOpen(true);
   };
@@ -101,21 +103,13 @@ const PersonnelPage: React.FC = () => {
       amount: Number(paymentForm.amount),
       date: paymentForm.date,
       period: paymentForm.period,
+      paidBy: paymentForm.paidBy,
       isPaid: true
     };
     addPayment(newPayment);
 
-    const newExpense: Expense = {
-      id: `exp-${Date.now()}`,
-      category: ExpenseCategory.PERSONNEL,
-      amount: Number(paymentForm.amount),
-      date: paymentForm.date,
-      description: `${paymentForm.period} Maaş Ödemesi - ${selectedEmp.fullName}`,
-      paidBy: Payer.OFFICE,
-      // Fix: Added missing required isPaid property
-      isPaid: true
-    };
-    addExpense(newExpense);
+    // Maaş ödemesi artık SalaryPayment tablosunda paidBy ile takip ediliyor.
+    // Expense tablosuna ek kayıt atılmıyor (mükerrer gider önleme).
 
     // Log is handled by add actions but we had a custom message. 
     // Ideally we should move log logic to DataContext completely or use refreshLogs() here if we want to add custom logs.
@@ -433,18 +427,32 @@ const PersonnelPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Ödenecek Tutar</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2.5 text-slate-500 font-bold">₺</span>
-              <input
-                type="number"
-                required
-                min="0"
-                value={paymentForm.amount}
-                onChange={e => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })}
-                className="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-900"
-              />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Ödenecek Tutar</label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-slate-500 font-bold">₺</span>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  value={paymentForm.amount}
+                  onChange={e => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })}
+                  className="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-900"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Ödeyen</label>
+              <select
+                value={paymentForm.paidBy}
+                onChange={e => setPaymentForm({ ...paymentForm, paidBy: e.target.value as Payer })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-semibold"
+              >
+                <option value={Payer.OFFICE}>Ofis Kasası</option>
+                <option value={Payer.ALTAN}>Altan (Ortak)</option>
+                <option value={Payer.SUAT}>Suat (Ortak)</option>
+              </select>
             </div>
           </div>
 

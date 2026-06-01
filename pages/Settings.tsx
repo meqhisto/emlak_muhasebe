@@ -7,10 +7,19 @@ import { User, UserRole, SystemLog } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 
+const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
 const Settings: React.FC = () => {
   const { currentUser, logout } = useAuth();
-  const { logs, refreshLogs, transactions, expenses, consultants, personnel } = useData();
-  const [activeTab, setActiveTab] = useState<'GENERAL' | 'SECURITY'>('GENERAL');
+  const { logs, refreshLogs, transactions, expenses, consultants, personnel, closedPeriods, closePeriod, openPeriod } = useData();
+  const [activeTab, setActiveTab] = useState<'GENERAL' | 'PERIODS' | 'SECURITY'>('GENERAL');
+
+  const [periodForm, setPeriodForm] = useState({
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(), // 0-11
+    closeFullYear: false,
+    notes: '',
+  });
 
   useEffect(() => {
     if (activeTab === 'SECURITY') {
@@ -83,6 +92,15 @@ const Settings: React.FC = () => {
           >
             Genel Ayarlar
           </button>
+          {(currentUser?.role === UserRole.PARTNER || currentUser?.role === UserRole.ADMIN) && (
+            <button
+              onClick={() => setActiveTab('PERIODS')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'PERIODS' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              <Lock size={14} />
+              Dönem Kapanışı
+            </button>
+          )}
           {currentUser?.role === UserRole.PARTNER && (
             <button
               onClick={() => setActiveTab('SECURITY')}
@@ -169,6 +187,118 @@ const Settings: React.FC = () => {
                 </span>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'PERIODS' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          {/* Dönem Kapat Formu */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-slate-100 bg-amber-50 flex items-center gap-2">
+              <Lock size={20} className="text-amber-600" />
+              <h3 className="font-semibold text-amber-900">Dönem Kapat</h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-500">Kapatılan döneme ait hiçbir kayıt düzenlenemez veya silinemez. Yanlışlıkla kapatılan dönemler tekrar açılabilir.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Yıl</label>
+                  <input
+                    type="number"
+                    value={periodForm.year}
+                    onChange={e => setPeriodForm({ ...periodForm, year: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Ay</label>
+                  <select
+                    value={periodForm.closeFullYear ? -1 : periodForm.month}
+                    onChange={e => {
+                      const v = Number(e.target.value);
+                      setPeriodForm({ ...periodForm, month: v === -1 ? 0 : v, closeFullYear: v === -1 });
+                    }}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-white"
+                  >
+                    <option value={-1}>— Tüm Yıl —</option>
+                    {MONTHS_TR.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Not (opsiyonel)</label>
+                <input
+                  type="text"
+                  value={periodForm.notes}
+                  onChange={e => setPeriodForm({ ...periodForm, notes: e.target.value })}
+                  placeholder="Örn: Yıl sonu kapanışı, muhasebeci onayladı"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <button
+                onClick={async () => {
+                  const month = periodForm.closeFullYear ? -1 : periodForm.month;
+                  const label = month === -1 ? `${periodForm.year} tüm yılını` : `${periodForm.year} ${MONTHS_TR[periodForm.month]} ayını`;
+                  if (!window.confirm(`${label} kapatmak istediğinize emin misiniz? Bu dönemdeki kayıtlar düzenlenemez.`)) return;
+                  try {
+                    await closePeriod(periodForm.year, month, periodForm.notes || undefined);
+                    alert(`${label} başarıyla kapatıldı.`);
+                  } catch (e: any) {
+                    alert(e.response?.data?.error || 'Dönem kapatılırken hata oluştu.');
+                  }
+                }}
+                className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold transition-colors"
+              >
+                Dönemi Kapat
+              </button>
+            </div>
+          </div>
+
+          {/* Kapalı Dönemler Listesi */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+              <History size={20} className="text-slate-600" />
+              <h3 className="font-semibold text-slate-800">Kapalı Dönemler</h3>
+            </div>
+            {closedPeriods.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-sm">Henüz kapatılmış bir dönem yok.</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-5 py-3 text-left font-semibold text-slate-700">Dönem</th>
+                    <th className="px-5 py-3 text-left font-semibold text-slate-700">Kapatan</th>
+                    <th className="px-5 py-3 text-left font-semibold text-slate-700">Not</th>
+                    <th className="px-5 py-3 text-left font-semibold text-slate-700">Tarih</th>
+                    <th className="px-5 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {closedPeriods.map(cp => (
+                    <tr key={cp.id} className="hover:bg-slate-50/50">
+                      <td className="px-5 py-3 font-bold text-slate-800">
+                        {cp.month === -1 ? `${cp.year} — Tüm Yıl` : `${cp.year} / ${MONTHS_TR[cp.month]}`}
+                      </td>
+                      <td className="px-5 py-3 text-slate-600">{cp.closedBy}</td>
+                      <td className="px-5 py-3 text-slate-500 text-xs">{cp.notes || '—'}</td>
+                      <td className="px-5 py-3 text-slate-500 text-xs">{new Date(cp.createdAt).toLocaleDateString('tr-TR')}</td>
+                      <td className="px-5 py-3 text-right">
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm('Bu dönemi yeniden açmak istediğinize emin misiniz?')) return;
+                            await openPeriod(cp.id);
+                          }}
+                          className="px-3 py-1 text-xs bg-slate-100 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors font-medium"
+                        >
+                          Aç
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
